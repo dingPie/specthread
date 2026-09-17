@@ -1,6 +1,6 @@
 {
   "name": "specthread",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Spec-Driven Development (SDD) template. Docs are the single source of truth; code implements docs.",
   "type": "module",
   "bin": {
