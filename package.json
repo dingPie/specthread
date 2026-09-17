@@ -1,0 +1,29 @@
+{
+  "name": "specthread",
+  "version": "0.1.0",
+  "description": "Spec-Driven Development (SDD) template. Docs are the single source of truth; code implements docs.",
+  "type": "module",
+  "bin": {
+    "specthread": "./dist/bin/cli.js"
+  },
+  "files": [
+    "dist/",
+    "scaffold/"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build",
+    "docs:check": "node tools/docs/bin/check.ts",
+    "docs:generate": "node tools/docs/bin/generate.ts",
+    "docs:test": "node --test \"tools/docs/__tests__/*.test.ts\"",
+    "docs:typecheck": "tsc -p tools/tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "typescript": "^7.0.2"
+  }
+}

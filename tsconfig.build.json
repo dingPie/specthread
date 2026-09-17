@@ -1,0 +1,13 @@
+{
+  "extends": "./tools/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": true,
+    "outDir": "dist",
+    "rootDir": "tools/docs",
+    "declaration": true
+  },
+  "include": ["tools/docs/**/*.ts"],
+  "exclude": ["tools/docs/__tests__/**"]
+}

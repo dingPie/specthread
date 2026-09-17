@@ -1,0 +1,71 @@
+{
+  // ── specthread 설정 ──────────────────────────────────────────────
+  // 생략한 키는 기본값이 적용된다. 개인 설정은 config.local.jsonc (gitignore 대상).
+
+  // ── 스캔 대상 경로 ───────────────────────────────────────────────
+  // 자유 KV. 키는 용도 라벨, 값은 경로 배열.
+  // 디렉터리면 재귀 스캔, 파일이면 직접 로드.
+  // 예: "source": ["client/src/"], "data": ["data/"]
+  //     "meta": ["CLAUDE.md", "AGENTS.md"]
+  "path": {
+    "docs": ["docs/"],
+    "specthread": ["specthread/"]
+  },
+
+  // ── 기능 플래그 ──────────────────────────────────────────────────
+  // 기능 단위 on/off. 개별 규칙이 아닌 기능 묶음으로 제어한다.
+  "features": {
+    // 마커 체계 전체. false → marker/*, pending/* 검사 + pending 추적 비활성화
+    "markers": true,
+    // em dash 검사 + 치환 훅. false → style/em-dash 검사 + hook 비활성화
+    "emDash": true,
+    // 참조 절 자동 생성. false → reference/* 검사 + gen references 스킵
+    "references": true
+  },
+
+  // ── 마커 체계 ────────────────────────────────────────────────────
+  "markers": {
+    // 마커 종류. "system" 은 코어 예약, 나머지는 프로젝트 정의.
+    // 예: ["system", "design", "balance", "deps"]
+    "types": ["system"],
+    // 처리 시점 라벨. 마일스톤 등.
+    // 예: ["M1", "M2", "M3"]
+    "timepoints": []
+  }
+
+  // ── 문서 유형 (기본값: {}) ───────────────────────────────────────
+  // 경로 패턴별 템플릿과 프론트매터 스키마를 지정한다.
+  // "docTypes": {
+  //   "spec": {
+  //     "path": "docs/spec/",
+  //     "template": "docs/templates/spec.md",
+  //     "frontmatter": { "required": ["title"], "optional": ["status"] }
+  //   }
+  // }
+
+  // ── 문서명 해소 무시 (기본값: []) ────────────────────────────────
+  // 절 참조(예: "spec §4")가 파일명과 잘못 매칭되는 것을 방지한다.
+  // "ignoreDocNames": ["spec"]
+
+  // ── 검사 제외 (기본값: []) ───────────────────────────────────────
+  // 경로 prefix 로 전체 검사를 건너뛰거나, 특정 군만 검사한다.
+  // "skipCheck": [
+  //   "docs/archive/",
+  //   { "path": "docs/drafts/", "only": ["heading", "link"] }
+  // ]
+
+  // ── 참조 절 생성 제외 (기본값: []) ──────────────────────────────
+  // 이 경로 prefix 의 문서에는 참조 절을 생성하지 않는다.
+  // "skipRefs": ["docs/templates/"]
+
+  // ── 로케일 (기본값: "ko") ───────────────────────────────────────
+  // 현재 한국어 고정. 검사 메시지, 꼬리 절 이름, 시점 정규식 등에 영향.
+  // "locale": "ko"
+
+  // ── 규약 경로 ────────────────────────────────────────────────────
+  // 도구가 직접 읽고 쓰는 파일. path 와 별개.
+  // "rules": "specthread/rules.md",
+  // "pending": "specthread/pending.md",
+  // "project": "specthread/project.md",
+  // "work": "docs/work/"
+}

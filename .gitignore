@@ -1,0 +1,11 @@
+node_modules/
+package-lock.json
+
+# Personal config
+specthread/config.local.jsonc
+
+# Build output
+dist/
+
+# OS
+.DS_Store
