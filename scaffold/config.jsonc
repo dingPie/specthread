@@ -38,7 +38,7 @@
   // "docTypes": {
   //   "spec": {
   //     "path": "docs/spec/",
-  //     "template": "docs/templates/spec.md",
+  //     "template": "specthread/templates/spec.md",
   //     "frontmatter": { "required": ["title"], "optional": ["status"] }
   //   }
   // }
@@ -56,7 +56,7 @@
 
   // ── 참조 절 생성 제외 (기본값: []) ──────────────────────────────
   // 이 경로 prefix 의 문서에는 참조 절을 생성하지 않는다.
-  // "skipRefs": ["docs/templates/"]
+  // "skipRefs": ["specthread/templates/"]
 
   // ── 로케일 (기본값: "ko") ───────────────────────────────────────
   // 현재 한국어 고정. 검사 메시지, 꼬리 절 이름, 시점 정규식 등에 영향.

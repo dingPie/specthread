@@ -5,10 +5,12 @@ Spec-Driven Development (SDD) 도구. 문서가 단일 진실 원천이고, 검�
 ## 시작하기
 
 ```bash
-npm install -D specthread
-npx specthread init
-npx specthread check
+npm install -g specthread
+specthread init
+specthread check
 ```
+
+프로젝트 로컬로 쓰려면 `npm install -D specthread` 후 `npx specthread`로 실행한다.
 
 `init`이 프로젝트에 SDD 체계를 세팅한다:
 
@@ -18,9 +20,9 @@ specthread/          ← 문서 규칙·설정·미확정 사항
   rules.md
   project.md
   pending.md
-docs/templates/      ← 문서 골격 (수정 가능, check 대상)
-  spec.md
-  plan.md
+  templates/         ← 문서 골격 (수정 가능, check 대상)
+    spec.md
+    plan.md
 AGENTS.md            ← AI 도구 진입점
 CLAUDE.md            ← Claude Code용 (@AGENTS.md)
 .claude/skills/      ← Claude Code 스킬
@@ -59,14 +61,14 @@ specthread/config.local.jsonc (개인)
 
 설정이 없으면 기본값으로 동작한다. init이 생성하는 `config.jsonc`에 모든 옵션이 주석으로 설명되어 있다.
 
-| 키 | 역할 |
-|---|---|
-| `path` | 스캔 대상 경로 (자유 KV) |
-| `features` | 기능 플래그 (`markers`, `emDash`, `references`) |
-| `markers` | 마커 종류·시점 라벨 |
-| `docTypes` | 경로별 템플릿·프론트매터 스키마 |
-| `skipCheck` | 검사 건너뛸 경로 |
-| `skipRefs` | 참조 절 생성 건너뛸 경로 |
+| 키          | 역할                                            |
+| ----------- | ----------------------------------------------- |
+| `path`      | 스캔 대상 경로 (자유 KV)                        |
+| `features`  | 기능 플래그 (`markers`, `emDash`, `references`) |
+| `markers`   | 마커 종류·시점 라벨                             |
+| `docTypes`  | 경로별 템플릿·프론트매터 스키마                 |
+| `skipCheck` | 검사 건너뛸 경로                                |
+| `skipRefs`  | 참조 절 생성 건너뛸 경로                        |
 
 ## SDD 작업 흐름
 
@@ -112,20 +114,20 @@ AI는 작업 중에 `check`와 `gen`을 자동으로 호출한다. `AGENTS.md`�
 
 `AGENTS.md`가 본체. 대부분의 AI 코딩 도구가 이 파일을 읽는다.
 
-| 도구 | 동작 |
-|------|------|
-| Claude Code | `CLAUDE.md`의 `@AGENTS.md`가 자동 확장 |
-| Cursor / Copilot / Codex / Gemini | `AGENTS.md`를 네이티브로 읽음 |
+| 도구                              | 동작                                   |
+| --------------------------------- | -------------------------------------- |
+| Claude Code                       | `CLAUDE.md`의 `@AGENTS.md`가 자동 확장 |
+| Cursor / Copilot / Codex / Gemini | `AGENTS.md`를 네이티브로 읽음          |
 
 `--tools claude` (기본값)로 init하면 Claude Code 스킬이 함께 설치된다:
 
-| 스킬 | 역할 |
-|------|------|
-| `/check` | 문서 검사 실행 + 결과 해석 |
-| `/gen` | 참조 절·목차 생성 + 적용 안내 |
-| `/plan-open` | 작업 계획 문서 작성·검수·확정 |
-| `/plan-run` | 계획에 따라 실행·기록 |
-| `/plan-close` | 완료된 작업을 spec에 흡수 |
+| 스킬          | 역할                          |
+| ------------- | ----------------------------- |
+| `/check`      | 문서 검사 실행 + 결과 해석    |
+| `/gen`        | 참조 절·목차 생성 + 적용 안내 |
+| `/plan-open`  | 작업 계획 문서 작성·검수·확정 |
+| `/plan-run`   | 계획에 따라 실행·기록         |
+| `/plan-close` | 완료된 작업을 spec에 흡수     |
 
 스킬 없이 자연어로 같은 작업을 요청해도 된다. `AGENTS.md`가 AI에게 워크플로우를 알려주기 때문이다. 스킬은 자주 쓰는 흐름의 단축키다.
 
