@@ -21,6 +21,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "npm run build",
+    "release:patch": "npm version patch && npm publish && git push --tags",
+    "release:minor": "npm version minor && npm publish && git push --tags",
+    "release:major": "npm version major && npm publish && git push --tags",
     "docs:check": "node tools/docs/bin/check.ts",
     "docs:generate": "node tools/docs/bin/generate.ts",
     "docs:test": "node --test \"tools/docs/__tests__/*.test.ts\"",
