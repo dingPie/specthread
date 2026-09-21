@@ -108,11 +108,11 @@ export const init = (args: string[]): void => {
   }
 
   const templateFiles = ["spec.md", "plan.md"];
-  const templatesDir = join(cwd, "docs", "templates");
+  const templatesDir = join(stDir, "templates");
   for (const file of templateFiles) {
     const created = copyIfMissing(join(scaffold, "templates", file), join(templatesDir, file));
-    if (created) console.log(`  docs/templates/${file} 생성`);
-    else console.log(`  docs/templates/${file} 이미 존재 - 건너뜀`);
+    if (created) console.log(`  specthread/templates/${file} 생성`);
+    else console.log(`  specthread/templates/${file} 이미 존재 - 건너뜀`);
   }
 
   ensureAgentsMd(cwd, scaffold);

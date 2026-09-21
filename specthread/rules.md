@@ -19,8 +19,8 @@
 |-----|-------|---|
 | `rules.md` | 형식 규칙, 참조 방식, 미확정 관리 | 코어 |
 | [`project.md`](./project.md) | 이 프로젝트 고유 값 | 커스텀 |
-| [`../docs/templates/spec.md`](../docs/templates/spec.md) | 시스템 명세 템플릿 | 코어 |
-| [`../docs/templates/plan.md`](../docs/templates/plan.md) | 작업 계획 템플릿 | 코어 |
+| [`templates/spec.md`](./templates/spec.md) | 시스템 명세 템플릿 | 코어 |
+| [`templates/plan.md`](./templates/plan.md) | 작업 계획 템플릿 | 코어 |
 
 **어느 유형이 어느 템플릿을 쓰는지는 `config.docTypes` 가 정의한다.** 위 표는 파일 목록과 층 표시만 담는다.
 
@@ -410,8 +410,8 @@ _정하지 않으면 무엇이 막히는지_ 말할 수 있어야 한다. 이것
 ### 문서
 
 - [`project.md`](./project.md) - §1, §3-3
-- [`spec.md`](../docs/templates/spec.md) - §1
-- [`plan.md`](../docs/templates/plan.md) - §1
+- [`spec.md`](./templates/spec.md) - §1
+- [`plan.md`](./templates/plan.md) - §1
 - [`no-em-dash.mjs`](../tools/hooks/no-em-dash.mjs) - §2-6
 
 ## 미확정 사항
