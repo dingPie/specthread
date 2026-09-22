@@ -34,6 +34,7 @@ CLAUDE.md            ← Claude Code용 (@AGENTS.md)
 
 ```bash
 npx specthread init [--tools claude,cursor]   # 프로젝트 초기화
+npx specthread init --force                   # scaffold 파일을 최신으로 덮어쓰기
 npx specthread check                          # 문서 정합성 검사
 npx specthread gen                            # 참조 절·목차·요약 표 미리보기
 npx specthread gen --write                    # 실제 적용
@@ -64,6 +65,7 @@ specthread/config.local.jsonc (개인)
 | 키          | 역할                                            |
 | ----------- | ----------------------------------------------- |
 | `path`      | 스캔 대상 경로 (자유 KV)                        |
+| `fileKinds` | 확장자 → 종류 매핑 (`doc` / `source`)           |
 | `features`  | 기능 플래그 (`markers`, `emDash`, `references`) |
 | `markers`   | 마커 종류·시점 라벨                             |
 | `docTypes`  | 경로별 템플릿·프론트매터 스키마                 |
