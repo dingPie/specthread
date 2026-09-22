@@ -74,7 +74,7 @@ const markerSites = (index: DocIndex): Map<string, number> => {
   for (const file of index.files.values()) {
     if (file.path.startsWith(index.config.work)) continue;
     for (const marker of file.markers) {
-      if (marker.legacy || marker.slug === '') continue;
+      if (marker.slug === '') continue;
       const id = `${marker.kind}::${marker.slug}`;
       out.set(id, (out.get(id) ?? 0) + 1);
     }

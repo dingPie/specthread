@@ -1,6 +1,6 @@
 import { RULE } from '../constants/rules.ts';
 /** 변경 이력 순서 - 오래된 순이어야 한다 (`docs/system/rules.md` §2-4). */
-import { isCheckTarget } from '../utils/scope.ts';
+import { isTargetDoc } from '../utils/scope.ts';
 import type { DocIndex, Finding } from '../types.ts';
 
 /**
@@ -13,7 +13,7 @@ export const checkChangeLog = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (file.kind !== 'md' || !isCheckTarget(file.path, index.config)) continue;
+    if (!isTargetDoc(file, index.config)) continue;
     if (file.changeLogDates.length < 2) continue;
     const dates = file.changeLogDates;
     const bad = dates.findIndex((d, i) => i > 0 && d < dates[i - 1]);

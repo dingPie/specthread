@@ -52,7 +52,7 @@ export const isHeadingLine = (file: IndexedFile, line: number): boolean =>
 
 /** 규칙을 적용할 마크다운 문서인지. 검사기와 생성기가 같은 기준으로 걸러야 한다 */
 export const isTargetDoc = (file: IndexedFile, config: SpecthreadConfig): boolean =>
-  file.kind === 'md' && isCheckTarget(file.path, config);
+  file.kind === 'doc' && isCheckTarget(file.path, config);
 
 /** 참조 절을 생성·검사할 문서인지. skipRefs 에 등록된 경로는 제외한다 */
 export const wantsRefSection = (file: IndexedFile, config: SpecthreadConfig): boolean =>

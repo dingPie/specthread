@@ -24,20 +24,18 @@ const config = loadConfig();
 const index = buildIndex(config);
 
 // 색인 규모를 먼저 찍는다. 지적 수만 보면 검사가 실제로 대상을 훑었는지 알 수 없다
-const counts = { md: 0, code: 0, json: 0 };
+const counts = { doc: 0, source: 0 };
 let headings = 0;
 let links = 0;
 let sectionRefs = 0;
 let markers = 0;
-let legacyMarkers = 0;
 let pendingItems = 0;
 for (const f of index.files.values()) {
   counts[f.kind]++;
   headings += f.headings.length;
   links += f.links.length;
   sectionRefs += f.sectionRefs.length;
-  markers += f.markers.filter((m) => !m.legacy).length;
-  legacyMarkers += f.markers.filter((m) => m.legacy).length;
+  markers += f.markers.length;
   pendingItems += f.pendingItems.length;
 }
 
@@ -47,9 +45,9 @@ for (const f of index.files.values()) ignoredLines += f.ignored.size;
 const summary = {
   title: '색인',
   lines: [
-    `문서 ${counts.md} / 코드 ${counts.code} / 데이터 ${counts.json}`,
+    `문서 ${counts.doc} / 소스 ${counts.source}`,
     `헤딩 ${headings} / 링크 ${links} / 절 참조 ${sectionRefs}`,
-    `마커 새 형식 ${markers} / 구 형식 ${legacyMarkers} / 미확정 항목 ${pendingItems}`,
+    `마커 ${markers} / 미확정 항목 ${pendingItems}`,
     `인라인 억제 ${ignoredLines}`,
   ],
 };

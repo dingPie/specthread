@@ -67,11 +67,11 @@ test('@specthread-ignore 가 붙은 항목은 마커가 없어도 지적하지 �
   assert.deepEqual(findings, []);
 });
 
-test('구 형식 마커는 대조 대상이 아니다', () => {
+test('TEMP_* 구 형식 마커는 무시된다', () => {
   const spec = md('docs/spec/battle.md', '# battle', 'TEMP_BALANCE (M1): 잠정값');
   const findings = checkMarkers(indexOf([PENDING, spec]));
   assert.deepEqual(
     findings.map((f) => f.rule),
-    ['marker/unmarked'], // pierce-step 만 미확정으로 잡히고, 구 형식은 무시된다
+    ['marker/unmarked'], // pierce-step 만 미확정으로 잡힌다 (TEMP_* 는 파싱하지 않는다)
   );
 });

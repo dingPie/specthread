@@ -9,17 +9,24 @@ import { parseIgnoredLines } from "./ignore.ts";
 import { parseMarkdown, parseMarkers } from "./parse.ts";
 import { makeRefContext, parseSectionRefs } from "./resolve.ts";
 import type { DocIndex, FileKind, IndexedFile } from "../types.ts";
-import type { SpecthreadConfig } from "../config.schema.ts";
+import type { FileKindsConfig, SpecthreadConfig } from "../config.schema.ts";
 
 /** 프로젝트 루트 절대 경로. 색인 경로를 여기 기준 상대 경로로 통일하는 데 쓴다 */
 export const REPO_ROOT = normalize(process.cwd());
 
-/** 확장자로 파일 종류를 결정한다 */
-const kindFromPath = (file: string): FileKind | null => {
-  if (/\.md$/i.test(file)) return "md";
-  if (/\.tsx?$/.test(file)) return "code";
-  if (/\.json$/.test(file)) return "json";
-  return null;
+/** config.fileKinds 에서 확장자 → kind 역매핑을 만든다 */
+const buildExtMap = (kinds: FileKindsConfig): Map<string, FileKind> => {
+  const map = new Map<string, FileKind>();
+  for (const ext of kinds.doc) map.set(ext.toLowerCase(), "doc");
+  for (const ext of kinds.source) map.set(ext.toLowerCase(), "source");
+  return map;
+};
+
+/** 확장자로 파일 종류를 결정한다. config.fileKinds 기반 */
+const kindFromPath = (file: string, extMap: Map<string, FileKind>): FileKind | null => {
+  const dot = file.lastIndexOf(".");
+  if (dot < 0) return null;
+  return extMap.get(file.slice(dot).toLowerCase()) ?? null;
 };
 
 /** 디렉터리를 재귀로 훑어 파일 경로를 모은다. `node_modules` 와 숨김 디렉터리는 건너뛴다 */
@@ -42,6 +49,7 @@ const walk = (dir: string, out: string[] = []): string[] => {
  */
 const collectTargets = (
   pathConfig: Record<string, string[]>,
+  extMap: Map<string, FileKind>,
 ): { path: string; kind: FileKind }[] => {
   const out: { path: string; kind: FileKind }[] = [];
   const seen = new Set<string>();
@@ -49,7 +57,7 @@ const collectTargets = (
   const add = (abs: string) => {
     const rel = relative(REPO_ROOT, abs);
     if (seen.has(rel)) return;
-    const kind = kindFromPath(rel);
+    const kind = kindFromPath(rel, extMap);
     if (kind === null) return;
     seen.add(rel);
     out.push({ path: rel, kind });
@@ -77,8 +85,9 @@ const collectTargets = (
  * 위해, 한 번은 실제 파싱을 위해. 코드와 JSON 은 헤딩이 없어서 빈 값으로 채운다.
  */
 export const buildIndex = (config: SpecthreadConfig): DocIndex => {
-  const targets = collectTargets(config.path);
-  const mdPaths = targets.filter((t) => t.kind === "md").map((t) => t.path);
+  const extMap = buildExtMap(config.fileKinds);
+  const targets = collectTargets(config.path, extMap);
+  const mdPaths = targets.filter((t) => t.kind === "doc").map((t) => t.path);
   const ctx = makeRefContext(mdPaths, config.ignoreDocNames);
 
   const files = new Map<string, IndexedFile>();
@@ -86,7 +95,7 @@ export const buildIndex = (config: SpecthreadConfig): DocIndex => {
     const lines = readFileSync(join(REPO_ROOT, path), "utf8").split("\n");
     const sectionRefs = parseSectionRefs(path, kind, lines, ctx);
     const ignored = parseIgnoredLines(lines);
-    if (kind === "md") {
+    if (kind === "doc") {
       files.set(path, { ...parseMarkdown(path, lines), sectionRefs, ignored });
     } else {
       files.set(path, {
@@ -96,7 +105,7 @@ export const buildIndex = (config: SpecthreadConfig): DocIndex => {
         headings: [],
         links: [],
         sectionRefs,
-        markers: parseMarkers(lines, kind),
+        markers: parseMarkers(lines, kind, path),
         pendingItems: [],
         tocBlock: null,
         refSection: null,

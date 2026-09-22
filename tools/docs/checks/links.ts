@@ -3,7 +3,7 @@ import { RULE } from '../constants/rules.ts';
 import { existsSync } from 'node:fs';
 import { join, dirname, normalize } from 'node:path';
 import { REPO_ROOT } from '../utils/scan.ts';
-import { inChangeLog, inRefSection, isCheckTarget } from '../utils/scope.ts';
+import { inChangeLog, inRefSection, isTargetDoc } from '../utils/scope.ts';
 import type { DocIndex, Finding } from '../types.ts';
 
 /** 외부 링크는 파일 시스템에 없으니 확인하지 않는다 */
@@ -19,7 +19,7 @@ export const checkLinks = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (file.kind !== 'md' || !isCheckTarget(file.path, index.config)) continue;
+    if (!isTargetDoc(file, index.config)) continue;
     const anchors = new Set(file.headings.map((h) => h.anchor));
 
     for (const link of file.links) {

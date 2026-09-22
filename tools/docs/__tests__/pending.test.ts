@@ -9,7 +9,7 @@ import type { DocIndex, IndexedFile } from '../types.ts';
 const indexOf = (lines: string[]): DocIndex => {
   const path = DEFAULT_CONFIG.pending;
   const parsed = parseMarkdown(path, lines);
-  const file: IndexedFile = { ...parsed, kind: 'md', lines, sectionRefs: [], ignored: new Set() };
+  const file: IndexedFile = { ...parsed, kind: 'doc', lines, sectionRefs: [], ignored: new Set() };
   return {
     files: new Map([[path, file]]),
     docsByName: new Map(),
