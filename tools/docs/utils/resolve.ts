@@ -144,8 +144,8 @@ export const parseSectionRefs = (
 ): SectionRef[] => {
   const out: SectionRef[] = [];
   const scan = (line: string, i: number) => {
-    const mask = kind === "md" ? codeSpanMask(line) : null;
-    const linkedSpans = kind === "md" ? anchorLinkLabelSpans(line) : [];
+    const mask = kind === "doc" ? codeSpanMask(line) : null;
+    const linkedSpans = kind === "doc" ? anchorLinkLabelSpans(line) : [];
     for (const m of line.matchAll(SECTION_REF)) {
       // 라벨 안에 있으면 그 링크의 대상이 정답이다. 라벨 글자로 풀면 경로를 잃는다
       const span = linkedSpans.find(
@@ -166,9 +166,9 @@ export const parseSectionRefs = (
       if (docName === null) {
         out.push({
           num: m[1],
-          targetFile: kind === "md" ? path : null,
+          targetFile: kind === "doc" ? path : null,
           rawTarget: null,
-          reason: kind === "md" ? "resolved" : "no-doc-name",
+          reason: kind === "doc" ? "resolved" : "no-doc-name",
           linked,
           line: i + 1,
         });
@@ -190,7 +190,7 @@ export const parseSectionRefs = (
       });
     }
   };
-  if (kind === "md") eachContentLine(lines, scan);
+  if (kind === "doc") eachContentLine(lines, scan);
   else lines.forEach((l, i) => scan(l, i));
   return out;
 };

@@ -63,13 +63,11 @@ export interface SectionRef {
   line: number;
 }
 
-/** 미결 마커 하나. 새 형식과 구 형식을 갈라 담아 재편 진척을 센다 */
+/** 미결 마커 하나 */
 export interface Marker {
   kind: string;
   slug: string;
   line: number;
-  /** 구 `TEMP_*` 형식인지. 재편에서 치환 대상 */
-  legacy: boolean;
 }
 
 /** 큐 항목 또는 문서 미확정 사항 절 항목 */
@@ -80,7 +78,7 @@ export interface PendingItem {
 }
 
 /** 파일 종류. 뽑을 재료와 참조 해소 규칙이 달라진다 */
-export type FileKind = "md" | "code" | "json";
+export type FileKind = "doc" | "source";
 
 /** 색인된 파일 하나. 검사기와 생성기가 이 모양만 보고 일한다 */
 export interface IndexedFile {

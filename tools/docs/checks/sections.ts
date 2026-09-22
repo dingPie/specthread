@@ -47,7 +47,7 @@ const sectionNumbers = (index: DocIndex): Map<string, Set<string>> => {
   const byFile = new Map<string, Set<string>>();
   for (const file of index.files.values()) {
     // 절 번호는 문서만 갖는다. 코드·데이터에는 헤딩이 없다
-    if (file.kind !== "md") continue;
+    if (file.kind !== "doc") continue;
     const nums = new Set<string>();
     for (const heading of file.headings) {
       if (heading.num !== null) {
@@ -127,7 +127,7 @@ const inspect = (
   }
 
   // 다른 문서의 절은 앵커 링크로 가리켜야 한다. 자기 절 참조와 코드 주석은 면제다
-  if (file.kind === "md" && !ref.linked && ref.targetFile !== file.path) {
+  if (file.kind === "doc" && !ref.linked && ref.targetFile !== file.path) {
     return {
       file: file.path,
       line: ref.line,

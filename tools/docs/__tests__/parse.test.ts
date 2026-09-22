@@ -15,7 +15,7 @@ const DOCS = [
 const ctx = makeRefContext(DOCS, ['spec']);
 
 const refs = (from: string, ...lines: string[]) =>
-  parseSectionRefs(from, from.endsWith('.md') ? 'md' : 'code', lines, ctx);
+  parseSectionRefs(from, from.endsWith('.md') ? 'doc' : 'source', lines, ctx);
 
 test('펜스 코드블록 안 헤딩·링크를 세지 않는다', () => {
   const parsed = parseMarkdown('docs/x.md', [
@@ -217,14 +217,12 @@ test('구 형식 체크박스 항목은 읽지 않는다', () => {
   assert.deepEqual(parsed.pendingItems, []);
 });
 
-test('마커를 새 형식과 구 형식으로 갈라 읽는다', () => {
+test('마커를 읽는다', () => {
   const parsed = parseMarkdown('docs/x.md', [
     '# 제목',
     '`PENDING::deps::pierce-step` 미결',
-    'TEMP_BALANCE (M2) 잠정 수치',
   ]);
   assert.deepEqual(parsed.markers, [
-    { kind: 'deps', slug: 'pierce-step', line: 2, legacy: false },
-    { kind: 'balance', slug: '', line: 3, legacy: true },
+    { kind: 'deps', slug: 'pierce-step', line: 2 },
   ]);
 });

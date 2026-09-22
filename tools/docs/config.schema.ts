@@ -6,17 +6,34 @@
 import type { RuleGroup } from "./constants/rules.ts";
 
 // ---------------------------------------------------------------------------
+// 파일 종류
+// ---------------------------------------------------------------------------
+
+/**
+ * 파일 종류별 확장자 매핑.
+ *
+ * - `doc`: 기획 소스. 풀파싱 대상 (헤딩, 링크, 목차, 참조절, 변경이력, 마커).
+ * - `source`: 문서 외 참조 파일. 마커 + 절참조 스캔만.
+ *
+ * JSON 전용 `"_pending"` 키 패턴은 확장자로 내부 자동 분기.
+ */
+export interface FileKindsConfig {
+  doc: string[];
+  source: string[];
+}
+
+// ---------------------------------------------------------------------------
 // 스캔 대상
 // ---------------------------------------------------------------------------
 
 /**
- * 프로젝트 경로. 자유 KV — 키는 용도 라벨, 값은 경로 배열.
+ * 프로젝트 경로. 자유 KV - 키는 용도 라벨, 값은 경로 배열.
  * 디렉터리면 재귀 스캔, 파일이면 직접 로드. 파싱 전략은 확장자로 결정.
  *
  * 예:
- *   "docs": ["docs/"]                          — docs-only 프로젝트
- *   "source": ["client/src/"], "data": ["data/"] — 소스+데이터
- *   "meta": ["CLAUDE.md", "AGENTS.md"]          — 루트의 개별 파일
+ *   "docs": ["docs/"]                          - docs-only 프로젝트
+ *   "source": ["client/src/"], "data": ["data/"] - 소스+데이터
+ *   "meta": ["CLAUDE.md", "AGENTS.md"]          - 루트의 개별 파일
  */
 export type PathConfig = Record<string, string[]>;
 
@@ -104,13 +121,16 @@ export interface SpecthreadConfig {
   /** 스캔 대상 경로. 자유 KV */
   path: PathConfig;
 
+  /** 파일 종류별 확장자 매핑 */
+  fileKinds: FileKindsConfig;
+
   features: FeaturesConfig;
   markers: MarkersConfig;
   docTypes: Record<string, DocTypeConfig>;
 
   /**
    * 문서명 해소 시 무시할 단어.
-   * 예: ["spec"] — "spec §4" 가 template/spec.md 로 잘못 매칭되는 것 방지.
+   * 예: ["spec"] - "spec §4" 가 template/spec.md 로 잘못 매칭되는 것 방지.
    */
   ignoreDocNames: string[];
 
@@ -143,11 +163,50 @@ export interface SpecthreadConfig {
 // 기본값
 // ---------------------------------------------------------------------------
 
+export const DEFAULT_FILE_KINDS: FileKindsConfig = {
+  doc: [".md"],
+  source: [
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".ts",
+    ".tsx",
+    ".mts",
+    ".py",
+    ".java",
+    ".kt",
+    ".c",
+    ".h",
+    ".cpp",
+    ".cs",
+    ".go",
+    ".rs",
+    ".swift",
+    ".php",
+    ".rb",
+    ".dart",
+    ".lua",
+    ".sh",
+    ".json",
+    ".jsonc",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".xml",
+    ".html",
+    ".css",
+    ".scss",
+    ".sql",
+    ".graphql",
+  ],
+};
+
 export const DEFAULT_CONFIG: SpecthreadConfig = {
   path: {
     docs: ["docs/"],
     specthread: ["specthread/"],
   },
+  fileKinds: DEFAULT_FILE_KINDS,
   features: {
     markers: true,
     emDash: true,

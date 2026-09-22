@@ -34,7 +34,7 @@ export const checkMarkers = (index: DocIndex): Finding[] => {
     if (file.path === index.config.pending) continue;
 
     for (const marker of file.markers) {
-      if (marker.legacy || marker.slug === "") continue;
+      if (marker.slug === "") continue;
 
       const id = `${marker.kind}::${marker.slug}`;
       seen.add(id);

@@ -5,8 +5,8 @@
  * 펜스 코드블록 안은 전부 무시한다. 템플릿이 골격을 코드블록으로 담고 있어서
  * 추적하지 않으면 헤딩 88 개와 링크 90 개가 오탐으로 잡힌다.
  */
-import { TAIL_NAMES } from '../constants/docs.ts';
-import { slugify, splitHeadingNum } from './anchor.ts';
+import { TAIL_NAMES } from "../constants/docs.ts";
+import { slugify, splitHeadingNum } from "./anchor.ts";
 import type {
   AnchorLabelSpan,
   FileKind,
@@ -16,7 +16,7 @@ import type {
   Marker,
   PendingItem,
   Range,
-} from '../types.ts';
+} from "../types.ts";
 
 /**
  * 꼬리 절 이름. 하나가 나오면 그 뒤는 전부 꼬리다.
@@ -37,6 +37,7 @@ export const eachContentLine = (
   fn: (line: string, index: number) => void,
 ): void => {
   let fence = false;
+
   lines.forEach((line, i) => {
     if (/^\s*(```|~~~)/.test(line)) {
       fence = !fence;
@@ -57,7 +58,7 @@ export const codeSpanMask = (line: string): boolean[] => {
   const mask = new Array<boolean>(line.length).fill(false);
   let open = -1;
   for (let i = 0; i < line.length; i++) {
-    if (line[i] !== '`') continue;
+    if (line[i] !== "`") continue;
     if (open < 0) open = i;
     else {
       for (let j = open; j <= i; j++) mask[j] = true;
@@ -77,12 +78,12 @@ export const codeSpanMask = (line: string): boolean[] => {
 export const anchorLinkLabelSpans = (line: string): AnchorLabelSpan[] => {
   const spans: AnchorLabelSpan[] = [];
   for (const m of line.matchAll(/\[([^\]]*)\]\(([^)\s]+)\)/g)) {
-    if (!m[2].includes('#')) continue;
+    if (!m[2].includes("#")) continue;
     const labelStart = m.index + 1;
     spans.push({
       start: labelStart,
       end: labelStart + m[1].length,
-      target: m[2].split('#')[0],
+      target: m[2].split("#")[0],
     });
   }
   return spans;
@@ -98,14 +99,10 @@ export const linkTargetSpans = (line: string): Range[] => {
   return spans;
 };
 
-/** 새 형식 마커. 종류와 slug 를 함께 캡처한다 */
-const MARKER_NEW = /PENDING::([a-z]+)::([a-z0-9][a-z0-9-]*)/g;
-/** 구 `TEMP_*` 형식. slug 가 없어 큐와 묶이지 않으므로 재편에서 치환한다 */
-const MARKER_LEGACY = /TEMP_(DESIGN|BALANCE|DEPS|STYLE)\b/g;
+/** 마커. 종류와 slug 를 함께 캡처한다 */
+const MARKER = /PENDING::([a-z]+)::([a-z0-9][a-z0-9-]*)/g;
 /** JSON 안 마커. 데이터에는 주석을 못 달아서 필드로 표기한다 */
 const PENDING_JSON = /"_pending"\s*:\s*"([a-z]+)::([a-z0-9][a-z0-9-]*)"/g;
-/** JSON 안 구 형식 마커 */
-const TEMP_JSON = /"_temp"\s*:\s*"([a-z]+)"/g;
 /**
  * 미확정 항목. 마커와 달리 `PENDING` 접두가 없다.
  *
@@ -113,33 +110,39 @@ const TEMP_JSON = /"_temp"\s*:\s*"([a-z]+)"/g;
  * 절은 생성된 백링크 (`` [`slug`](...) ``), 둘 다 아닌 `li` (`` - `[slug]` ``) 는
  * 낡은 형식이다. 형식 판정은 `checks/pending.ts` 가 하고 여기는 세는 일만 한다.
  */
-const PENDING_ITEM = /^(?:\s*-|###)\s+[`\[]+([a-z]+)::([a-z0-9][a-z0-9-]*)[`\]]+/;
+const PENDING_ITEM =
+  /^(?:\s*-|###)\s+[`\[]+([a-z]+)::([a-z0-9][a-z0-9-]*)[`\]]+/;
 /** 마크다운 링크. 대상에 공백이 없다고 보고 잡는다 */
 const LINK = /\[([^\]]*)\]\(([^)\s]+)\)/g;
 /** 변경 이력 표의 첫 칸 날짜 */
 const CHANGELOG_DATE = /^\|\s*(\d{4}-\d{2}-\d{2})/;
 
+/** 주석 불가 확장자. `"_pending"` 키 패턴을 추가로 스캔한다 */
+const UNCOMMENTABLE_EXTS = new Set([".json"]);
+
 /**
- * 마커를 모은다. 새 형식과 구 형식을 갈라 담으므로 재편 진척을 셀 수 있다.
+ * 마커를 모은다.
  *
- * 마크다운은 펜스 안을 건너뛰고 (템플릿이 마커 예시를 코드블록에 담는다),
- * 코드와 JSON 은 전부 훑는다.
+ * doc 은 펜스 안을 건너뛰고 (템플릿이 마커 예시를 코드블록에 담는다),
+ * source 는 전부 훑는다. JSON 계열 파일은 `"_pending"` 키 패턴을 추가로 잡는다.
  */
-export const parseMarkers = (lines: string[], kind: FileKind): Marker[] => {
+export const parseMarkers = (
+  lines: string[],
+  kind: FileKind,
+  path?: string,
+): Marker[] => {
+  const ext = path ? path.slice(path.lastIndexOf(".")).toLowerCase() : "";
+  const isUncommentable = UNCOMMENTABLE_EXTS.has(ext);
   const out: Marker[] = [];
   const scan = (line: string, i: number) => {
-    for (const m of line.matchAll(MARKER_NEW))
-      out.push({ kind: m[1], slug: m[2], line: i + 1, legacy: false });
-    for (const m of line.matchAll(MARKER_LEGACY))
-      out.push({ kind: m[1].toLowerCase(), slug: '', line: i + 1, legacy: true });
-    if (kind === 'json') {
+    for (const m of line.matchAll(MARKER))
+      out.push({ kind: m[1], slug: m[2], line: i + 1 });
+    if (isUncommentable) {
       for (const m of line.matchAll(PENDING_JSON))
-        out.push({ kind: m[1], slug: m[2], line: i + 1, legacy: false });
-      for (const m of line.matchAll(TEMP_JSON))
-        out.push({ kind: m[1], slug: '', line: i + 1, legacy: true });
+        out.push({ kind: m[1], slug: m[2], line: i + 1 });
     }
   };
-  if (kind === 'md') eachContentLine(lines, scan);
+  if (kind === "doc") eachContentLine(lines, scan);
   else lines.forEach((l, i) => scan(l, i));
   return out;
 };
@@ -158,11 +161,11 @@ const findTocBlock = (lines: string[]): Range | null => {
     if (!/^\*\*목차\*\*/.test(lines[i])) continue;
     // 한 줄에 몰아 쓴 인라인 나열은 그 줄이 블록 전체다. 규칙 12 위반이라
     // 생성기가 목록 형태로 갈아끼운다
-    if (lines[i].trim() !== '**목차**') return { start: i + 1, end: i + 1 };
+    if (lines[i].trim() !== "**목차**") return { start: i + 1, end: i + 1 };
     let end = i;
     for (let j = i + 1; j < lines.length; j++) {
       if (/^\s*-\s+\[/.test(lines[j])) end = j;
-      else if (lines[j].trim() === '') continue;
+      else if (lines[j].trim() === "") continue;
       else break;
     }
     return { start: i + 1, end: end + 1 };
@@ -176,14 +179,23 @@ const findTocBlock = (lines: string[]): Range | null => {
  * 헤딩 목록에서 뽑기 때문에 시작이 끝보다 커지는 일이 구조적으로 없다. 훑으면서
  * 상태로 들고 가면, 같은 이름의 절이 두 번 나올 때 시작만 덮어써져 범위가 뒤집힌다.
  */
-const tailRange = (headings: Heading[], title: string, lineCount: number): Range | null => {
-  const at = headings.findIndex((h) => h.level === 2 && h.tail && h.title === title);
+const tailRange = (
+  headings: Heading[],
+  title: string,
+  lineCount: number,
+): Range | null => {
+  const at = headings.findIndex(
+    (h) => h.level === 2 && h.tail && h.title === title,
+  );
   if (at < 0) {
     return null;
   }
   const heading = headings[at];
   const next = headings.slice(at + 1).find((h) => h.level === 2);
-  return { start: heading.line + 1, end: next === undefined ? lineCount : next.line - 1 };
+  return {
+    start: heading.line + 1,
+    end: next === undefined ? lineCount : next.line - 1,
+  };
 };
 
 /**
@@ -226,7 +238,7 @@ export const parseHeadings = (lines: string[]): Heading[] => {
 export const parseMarkdown = (
   path: string,
   lines: string[],
-): Omit<IndexedFile, 'sectionRefs' | 'ignored'> => {
+): Omit<IndexedFile, "sectionRefs" | "ignored"> => {
   const headings = parseHeadings(lines);
   const headingAt = new Map(headings.map((h) => [h.line, h]));
   const links: Link[] = [];
@@ -251,11 +263,11 @@ export const parseMarkdown = (
     }
 
     for (const m of line.matchAll(LINK)) {
-      const [rawTarget, anchor] = m[2].split('#');
+      const [rawTarget, anchor] = m[2].split("#");
       links.push({
         label: m[1],
         // `(#앵커)` 처럼 대상이 비면 자기 문서 안 링크다
-        target: rawTarget === '' ? null : rawTarget,
+        target: rawTarget === "" ? null : rawTarget,
         anchor: anchor ?? null,
         line: i + 1,
         section: currentSection,
@@ -269,22 +281,24 @@ export const parseMarkdown = (
     }
   });
 
-  const changeLogRange = tailRange(headings, '변경 이력', lines.length);
+  const changeLogRange = tailRange(headings, "변경 이력", lines.length);
   // 본문에도 날짜 표가 있을 수 있어서 변경 이력 절 안의 것만 센다
   const inLog = (line: number) =>
-    changeLogRange !== null && line >= changeLogRange.start && line <= changeLogRange.end;
+    changeLogRange !== null &&
+    line >= changeLogRange.start &&
+    line <= changeLogRange.end;
 
   return {
     path,
-    kind: 'md',
+    kind: "doc",
     lines,
     headings,
     links,
-    markers: parseMarkers(lines, 'md'),
+    markers: parseMarkers(lines, "doc", path),
     pendingItems,
     tocBlock: findTocBlock(lines),
-    refSection: tailRange(headings, '참조', lines.length),
-    pendingSection: tailRange(headings, '미확정 사항', lines.length),
+    refSection: tailRange(headings, "참조", lines.length),
+    pendingSection: tailRange(headings, "미확정 사항", lines.length),
     changeLogRange,
     changeLogDates: dated.filter((d) => inLog(d.line)).map((d) => d.date),
   };
