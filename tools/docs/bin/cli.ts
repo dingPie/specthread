@@ -2,12 +2,13 @@
 
 const [command, ...rest] = process.argv.slice(2);
 
-const usage = `specthread — Spec-Driven Development (SDD) 도구
+const usage = `specthread - Spec-Driven Development (SDD) 도구
 
 사용법: specthread <command> [options]
 
 commands:
   init [--tools claude,cursor]   프로젝트에 SDD 체계 초기화
+  init --force                   scaffold 파일을 최신으로 덮어쓰기
   check                          문서 정합성 검사 (28개 규칙)
   gen [--write]                  참조 절·목차·미확정 사항 요약 생성
   help                           이 도움말 표시

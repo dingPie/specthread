@@ -17,12 +17,17 @@ const scaffoldDir = (): string => {
   throw new Error("scaffold 디렉터리를 찾을 수 없다");
 };
 
-const copyIfMissing = (src: string, dest: string): boolean => {
-  if (existsSync(dest)) return false;
+const copyFile = (
+  src: string,
+  dest: string,
+  force: boolean,
+): "created" | "overwritten" | "skipped" => {
+  if (existsSync(dest) && !force) return "skipped";
+  const existed = existsSync(dest);
   const dir = dirname(dest);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(dest, readFileSync(src, "utf8"), "utf8");
-  return true;
+  return existed ? "overwritten" : "created";
 };
 
 const ensureAgentsMd = (cwd: string, scaffold: string): void => {
@@ -85,12 +90,20 @@ const parseTools = (args: string[]): Set<string> => {
   return new Set(args[idx + 1].split(",").map((t) => t.trim().toLowerCase()));
 };
 
+const STATUS_LABEL = {
+  created: "생성",
+  overwritten: "덮어씀",
+  skipped: "이미 존재. 건너뜀",
+} as const;
+
 export const init = (args: string[]): void => {
   const cwd = process.cwd();
   const scaffold = scaffoldDir();
   const tools = parseTools(args);
+  const force = args.includes("--force");
 
-  console.log("specthread init\n");
+  if (force) console.log("specthread init --force\n");
+  else console.log("specthread init\n");
 
   const stDir = join(cwd, "specthread");
   if (existsSync(stDir)) {
@@ -100,19 +113,26 @@ export const init = (args: string[]): void => {
     console.log("  specthread/ 생성");
   }
 
-  const specthreadFiles = ["config.jsonc", "rules.md", "project.md", "pending.md"];
+  const specthreadFiles = [
+    "config.jsonc",
+    "rules.md",
+    "project.md",
+    "pending.md",
+  ];
   for (const file of specthreadFiles) {
-    const created = copyIfMissing(join(scaffold, file), join(stDir, file));
-    if (created) console.log(`  specthread/${file} 생성`);
-    else console.log(`  specthread/${file} 이미 존재 - 건너뜀`);
+    const status = copyFile(join(scaffold, file), join(stDir, file), force);
+    console.log(`  specthread/${file} ${STATUS_LABEL[status]}`);
   }
 
   const templateFiles = ["spec.md", "plan.md"];
   const templatesDir = join(stDir, "templates");
   for (const file of templateFiles) {
-    const created = copyIfMissing(join(scaffold, "templates", file), join(templatesDir, file));
-    if (created) console.log(`  specthread/templates/${file} 생성`);
-    else console.log(`  specthread/templates/${file} 이미 존재 - 건너뜀`);
+    const status = copyFile(
+      join(scaffold, "templates", file),
+      join(templatesDir, file),
+      force,
+    );
+    console.log(`  specthread/templates/${file} ${STATUS_LABEL[status]}`);
   }
 
   ensureAgentsMd(cwd, scaffold);
@@ -123,14 +143,20 @@ export const init = (args: string[]): void => {
     const skillsDir = join(cwd, ".claude", "skills");
     if (!existsSync(skillsDir)) mkdirSync(skillsDir, { recursive: true });
 
-    const skillFiles = ["check.md", "gen.md", "plan-open.md", "plan-run.md", "plan-close.md"];
+    const skillFiles = [
+      "check.md",
+      "gen.md",
+      "plan-open.md",
+      "plan-run.md",
+      "plan-close.md",
+    ];
     for (const file of skillFiles) {
-      const created = copyIfMissing(
+      const status = copyFile(
         join(scaffold, "claude", "skills", file),
         join(skillsDir, file),
+        force,
       );
-      if (created) console.log(`  .claude/skills/${file} 생성`);
-      else console.log(`  .claude/skills/${file} 이미 존재 - 건너뜀`);
+      console.log(`  .claude/skills/${file} ${STATUS_LABEL[status]}`);
     }
   }
 
