@@ -68,7 +68,6 @@ specthread/config.local.jsonc (개인)
 | `fileKinds` | 확장자 → 종류 매핑 (`doc` / `source`)           |
 | `features`  | 기능 플래그 (`markers`, `emDash`, `references`) |
 | `markers`   | 마커 종류·시점 라벨                             |
-| `docTypes`  | 경로별 템플릿·프론트매터 스키마                 |
 | `skipCheck` | 검사 건너뛸 경로                                |
 | `skipRefs`  | 참조 절 생성 건너뛸 경로                        |
 

@@ -126,6 +126,8 @@ export interface SpecthreadConfig {
 
   features: FeaturesConfig;
   markers: MarkersConfig;
+
+  /** 미구현. 값을 넣어도 동작하지 않는다 - 템플릿·프론트매터 강제는 아직 없다 */
   docTypes: Record<string, DocTypeConfig>;
 
   /**

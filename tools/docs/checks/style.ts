@@ -49,6 +49,23 @@ export const checkStyle = (index: DocIndex): Finding[] => {
  * 없는 것) 은 절 단위 판정이 애매해 검사하지 않는다 - 병기가 없는 절이 곧 사람만
  * 검사하는 규칙이다.
  */
+/**
+ * 지금 실제로 도는 검사 id 만.
+ *
+ * 기능을 끄면 그 검사는 돌지 않으므로 규칙 문서에 선언을 요구할 이유도 없다.
+ * 끈 기능의 문서를 지웠다고 지적이 나오면 정리를 벌하는 셈이 된다.
+ */
+const enabledRuleIds = (index: DocIndex): readonly string[] => {
+  const { features } = index.config;
+  return ALL_RULE_IDS.filter((id) => {
+    if (id === RULE.STYLE.EM_DASH) return features.emDash;
+    const group = id.split('/')[0];
+    if (group === 'reference') return features.references;
+    if (group === 'marker' || group === 'pending') return features.markers;
+    return true;
+  });
+};
+
 export const checkRuleDeclared = (index: DocIndex): Finding[] => {
   const rulesPath = index.config.rules;
   const doc = index.files.get(rulesPath);
@@ -57,10 +74,12 @@ export const checkRuleDeclared = (index: DocIndex): Finding[] => {
   const text = doc.lines.join('\n');
   const heading = doc.headings.find((h) => h.title === '개요');
 
-  return ALL_RULE_IDS.filter((id) => !text.includes(id)).map((id) => ({
-    file: rulesPath,
-    line: heading?.line ?? 1,
-    rule: RULE.STYLE.RULE_UNDECLARED,
-    message: `검사 id 가 규칙 문서에 선언되지 않았다 - ${id}`,
-  }));
+  return enabledRuleIds(index)
+    .filter((id) => !text.includes(id))
+    .map((id) => ({
+      file: rulesPath,
+      line: heading?.line ?? 1,
+      rule: RULE.STYLE.RULE_UNDECLARED,
+      message: `검사 id 가 규칙 문서에 선언되지 않았다 - ${id}`,
+    }));
 };

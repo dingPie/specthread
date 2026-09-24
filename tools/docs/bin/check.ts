@@ -18,7 +18,7 @@ import { checkMarkers } from '../checks/markers.ts';
 import { checkRuleDeclared, checkStyle } from '../checks/style.ts';
 import { isIgnored } from '../utils/ignore.ts';
 import { report } from '../utils/report.ts';
-import { isWorkExempt } from '../utils/scope.ts';
+import { isSkipCheckExempt } from '../utils/scope.ts';
 
 const config = loadConfig();
 const index = buildIndex(config);
@@ -65,6 +65,6 @@ const findings = [
   ...(features.markers ? checkMarkers(index) : []),
   ...(features.emDash ? checkStyle(index) : []),
   ...checkRuleDeclared(index),
-].filter((f) => !isWorkExempt(f, index.config) && !isIgnored(index, f));
+].filter((f) => !isSkipCheckExempt(f, index.config) && !isIgnored(index, f));
 
 process.exit(report(findings, summary));

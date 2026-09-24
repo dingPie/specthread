@@ -42,16 +42,6 @@
     "timepoints": []
   }
 
-  // ── 문서 유형 (기본값: {}) ───────────────────────────────────────
-  // 경로 패턴별 템플릿과 프론트매터 스키마를 지정한다.
-  // "docTypes": {
-  //   "spec": {
-  //     "path": "docs/spec/",
-  //     "template": "specthread/templates/spec.md",
-  //     "frontmatter": { "required": ["title"], "optional": ["status"] }
-  //   }
-  // }
-
   // ── 문서명 해소 무시 (기본값: []) ────────────────────────────────
   // 절 참조가 파일명과 잘못 매칭되는 것을 방지한다.
   // "ignoreDocNames": ["spec"]

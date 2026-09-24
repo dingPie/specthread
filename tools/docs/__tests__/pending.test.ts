@@ -94,10 +94,19 @@ test('선택지 하나는 지적하지 않는다', () => {
 });
 
 test('작업 문서 참조를 지적한다', () => {
+  // 관리 문서는 specthread/ 에 있으므로 docs/work/ 참조는 ../ 로 올라간다
   assert.deepEqual(
-    rules(['출처: [`m2a-st-b6.md`](./work/m2a-st-b6.md) §2-3']),
+    rules(['출처: [`m2a-st-b6.md`](../docs/work/m2a-st-b6.md) §2-3']),
     ['pending/work-link'],
   );
+});
+
+test('코드 스팬의 작업 문서 경로도 지적한다', () => {
+  assert.deepEqual(rules(['출처: `docs/work/m2a-st-b6.md` §2-3']), ['pending/work-link']);
+});
+
+test('작업 폴더 밖의 work 이름은 지적하지 않는다', () => {
+  assert.deepEqual(rules(['참고: [`x.md`](./work/x.md)']), []);
 });
 
 test('변경 이력은 검사하지 않는다', () => {
