@@ -74,7 +74,7 @@ export const singleTitle = (file: IndexedFile): Heading | null => {
  * `{ path, only }` 는 해당 경로에서 `only` 에 나열된 규칙군만 유지한다는 뜻이다.
  * 그 밖의 규칙군에 속하는 지적은 여기서 걸러진다.
  */
-export const isWorkExempt = (finding: Finding, config: SpecthreadConfig): boolean =>
+export const isSkipCheckExempt = (finding: Finding, config: SpecthreadConfig): boolean =>
   config.skipCheck.some((entry) => {
     if (typeof entry === "string") return false;
     if (!finding.file.startsWith(entry.path)) return false;

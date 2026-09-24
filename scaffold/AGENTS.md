@@ -35,8 +35,6 @@ Spec-Driven Development (SDD) 템플릿. 문서가 단일 진실 원천이고 �
 | `specthread/project.md` | 설정값의 맥락과 프로젝트 고유 설명 |
 | `specthread/pending.md` | 미확정 사항 정본                   |
 
-문서 유형 정의 (어떤 경로가 어떤 템플릿을 쓰는지) 는 `config.docTypes` 가 정본이다.
-
 `docs/` 안 문서를 편집할 때는 `rules.md` 를 먼저 읽는다.
 
 ## 4. 미확정 마커

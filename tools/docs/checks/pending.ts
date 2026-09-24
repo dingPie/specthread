@@ -5,6 +5,7 @@
  * 이유라서, 다른 문서에 같은 모양이 나타나면 그건 미확정 사항 절 (생성 뷰) 이고
  * 형식이 다르다 - 뷰는 `li`, 정본은 `###` 헤딩이다.
  */
+import { dirname, join, normalize } from 'node:path';
 import { timepointGlobal } from '../constants/patterns.ts';
 import { RULE } from '../constants/rules.ts';
 import { summaryBlocks } from '../gen/summary.ts';
@@ -64,7 +65,30 @@ const inspectHeading = (path: string, line: number, title: string): Finding[] =>
   return findings;
 };
 
-const inspectBody = (path: string, line: number, text: string): Finding[] => {
+/** 링크 대상과 코드 스팬. 둘 다 경로가 올 수 있다 */
+const LINK_TARGET = /\]\(([^)]+)\)/g;
+const CODE_SPAN = /`([^`]+)`/g;
+
+/**
+ * 경로가 작업 폴더를 가리키는지.
+ *
+ * 링크는 문서 기준 상대 경로, 코드 스팬은 루트 기준 표기가 흔하다. 둘 다 본다.
+ */
+const pointsToWork = (raw: string, dir: string, work: string): boolean => {
+  const clean = raw.split('#')[0].trim();
+  if (clean === '') return false;
+  const prefix = work.endsWith('/') ? work : `${work}/`;
+  return (
+    normalize(clean).startsWith(prefix) || normalize(join(dir, clean)).startsWith(prefix)
+  );
+};
+
+const inspectBody = (
+  path: string,
+  line: number,
+  text: string,
+  work: string,
+): Finding[] => {
   const findings: Finding[] = [];
 
   if (ITEM_AS_LI.test(text)) {
@@ -85,7 +109,12 @@ const inspectBody = (path: string, line: number, text: string): Finding[] => {
     });
   }
 
-  if (/\]\(\.?\.?\/?work\//.test(text) || /`work\//.test(text)) {
+  const dir = dirname(path);
+  const refs = [
+    ...[...text.matchAll(LINK_TARGET)].map((m) => m[1]),
+    ...[...text.matchAll(CODE_SPAN)].map((m) => m[1]),
+  ];
+  if (refs.some((r) => pointsToWork(r, dir, work))) {
     findings.push({
       file: path,
       line,
@@ -188,6 +217,8 @@ const inspectPendingSection = (index: DocIndex): Finding[] => {
 
   for (const file of index.files.values()) {
     if (file.path === index.config.pending || file.pendingSection === null) continue;
+    // 작업 문서는 생성 대상이 아니다 (pendingSectionBlock 과 같은 조건).
+    if (file.path.startsWith(index.config.work)) continue;
 
     const expected = pendingSectionBlock(file, byTarget, index);
     const actual = file.lines.slice(file.pendingSection.start - 1, file.pendingSection.end);
@@ -224,7 +255,7 @@ export const checkPending = (index: DocIndex): Finding[] => {
       findings.push(...inspectTimepoint(file, line));
       return;
     }
-    findings.push(...inspectBody(file.path, line, raw));
+    findings.push(...inspectBody(file.path, line, raw, index.config.work));
   });
 
   return [...findings, ...inspectSummary(file, index), ...inspectPendingSection(index)];

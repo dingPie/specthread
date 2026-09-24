@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { DEFAULT_CONFIG } from '../config.schema.ts';
 import type { RuleGroup } from '../constants/rules.ts';
-import { isCheckTarget, isWorkExempt, wantsRefSection } from '../utils/scope.ts';
+import { isCheckTarget, isSkipCheckExempt, wantsRefSection } from '../utils/scope.ts';
 import type { Finding, IndexedFile } from '../types.ts';
 import { parseMarkdown } from '../utils/parse.ts';
 
@@ -41,22 +41,22 @@ test('skipCheck 에 해당하지 않으면 검사 대상이다', () => {
   assert.equal(isCheckTarget('docs/pending.md', config), true);
 });
 
-// ── isWorkExempt (객체형 skipCheck) ──
+// ── isSkipCheckExempt (객체형 skipCheck) ──
 
 test('초안 문서의 규칙 지적은 걸러낸다', () => {
-  assert.equal(isWorkExempt(f('docs/work/x.md', 'timestamp/body-date'), config), true);
-  assert.equal(isWorkExempt(f('docs/work/x.md', 'section-ref/missing'), config), true);
-  assert.equal(isWorkExempt(f('docs/work/x.md', 'changelog/order'), config), true);
+  assert.equal(isSkipCheckExempt(f('docs/work/x.md', 'timestamp/body-date'), config), true);
+  assert.equal(isSkipCheckExempt(f('docs/work/x.md', 'section-ref/missing'), config), true);
+  assert.equal(isSkipCheckExempt(f('docs/work/x.md', 'changelog/order'), config), true);
 });
 
 test('초안 문서라도 생성 관련 지적은 남긴다', () => {
-  assert.equal(isWorkExempt(f('docs/work/x.md', 'toc/stale'), config), false);
-  assert.equal(isWorkExempt(f('docs/work/x.md', 'reference/stale'), config), false);
+  assert.equal(isSkipCheckExempt(f('docs/work/x.md', 'toc/stale'), config), false);
+  assert.equal(isSkipCheckExempt(f('docs/work/x.md', 'reference/stale'), config), false);
 });
 
 test('초안 문서가 아니면 그대로 둔다', () => {
-  assert.equal(isWorkExempt(f('docs/spec/battle.md', 'timestamp/body-date'), config), false);
-  assert.equal(isWorkExempt(f('docs/pending.md', 'changelog/order'), config), false);
+  assert.equal(isSkipCheckExempt(f('docs/spec/battle.md', 'timestamp/body-date'), config), false);
+  assert.equal(isSkipCheckExempt(f('docs/pending.md', 'changelog/order'), config), false);
 });
 
 // ── wantsRefSection (skipRefs) ──
