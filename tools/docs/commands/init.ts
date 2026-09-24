@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { DEFAULT_CONFIG } from "../config.schema.ts";
+import { renderConfig } from "./config-template.ts";
 
 const SPECTHREAD_START = "<!-- specthread:start -->";
 const SPECTHREAD_END = "<!-- specthread:end -->";
@@ -17,18 +19,19 @@ const scaffoldDir = (): string => {
   throw new Error("scaffold 디렉터리를 찾을 수 없다");
 };
 
-const copyFile = (
-  src: string,
-  dest: string,
-  force: boolean,
-): "created" | "overwritten" | "skipped" => {
+type WriteStatus = "created" | "overwritten" | "skipped";
+
+const putFile = (dest: string, content: string, force: boolean): WriteStatus => {
   if (existsSync(dest) && !force) return "skipped";
   const existed = existsSync(dest);
   const dir = dirname(dest);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(dest, readFileSync(src, "utf8"), "utf8");
+  writeFileSync(dest, content, "utf8");
   return existed ? "overwritten" : "created";
 };
+
+const copyFile = (src: string, dest: string, force: boolean): WriteStatus =>
+  putFile(dest, readFileSync(src, "utf8"), force);
 
 const ensureAgentsMd = (cwd: string, scaffold: string): void => {
   const dest = join(cwd, "AGENTS.md");
@@ -113,12 +116,14 @@ export const init = (args: string[]): void => {
     console.log("  specthread/ 생성");
   }
 
-  const specthreadFiles = [
-    "config.jsonc",
-    "rules.md",
-    "project.md",
-    "pending.md",
-  ];
+  const configStatus = putFile(
+    join(stDir, "config.jsonc"),
+    renderConfig(DEFAULT_CONFIG),
+    force,
+  );
+  console.log(`  specthread/config.jsonc ${STATUS_LABEL[configStatus]}`);
+
+  const specthreadFiles = ["rules.md", "project.md", "pending.md"];
   for (const file of specthreadFiles) {
     const status = copyFile(join(scaffold, file), join(stDir, file), force);
     console.log(`  specthread/${file} ${STATUS_LABEL[status]}`);
