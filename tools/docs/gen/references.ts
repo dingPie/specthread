@@ -13,16 +13,20 @@
  * 불러 지금 내용과 비교한다. 검사기가 생성기를 부르는 것이 거꾸로 보이지만,
  * _무엇이 옳은 내용인가_ 를 한곳에서만 정의하려면 이 방향이 맞다.
  */
-import { basename, dirname, join, normalize } from "node:path";
+import { basename, dirname, extname, join, normalize } from "node:path";
 import type { SpecthreadConfig } from "../config.schema.ts";
+import { docExtSet } from "../utils/scan.ts";
 import { wantsRefSection } from "../utils/scope.ts";
 import type { DocIndex, IndexedFile } from "../types.ts";
 
 /** 대상 하나와 그것을 가리킨 이 문서의 절 번호들 */
 type Target = { path: string; sections: string[] };
 
-/** 코드·데이터 대상인지. 나머지 (`.md` · 디렉터리) 는 문서 쪽으로 간다 */
-const isCode = (path: string): boolean => /\.(ts|tsx|json)$/.test(path);
+/** 코드·데이터 대상인지. doc 확장자가 아니고 디렉터리도 아니면 코드로 본다 */
+const isCode = (path: string, docExts: Set<string>): boolean => {
+  const ext = extname(path).toLowerCase();
+  return ext !== "" && !docExts.has(ext);
+};
 
 /**
  * 링크 대상의 리포 루트 기준 위치. 같은 파일 이름이 겹칠 때 라벨로 쓴다.
@@ -115,8 +119,9 @@ export const referenceBlock = (file: IndexedFile, config: SpecthreadConfig): str
   const render = (list: Target[]) =>
     list.map((t) => line(t, label.get(t.path) ?? t.path));
 
-  const docs = targets.filter((t) => !isCode(t.path));
-  const code = targets.filter((t) => isCode(t.path));
+  const exts = docExtSet(config.fileKinds);
+  const docs = targets.filter((t) => !isCode(t.path, exts));
+  const code = targets.filter((t) => isCode(t.path, exts));
 
   const out = [""];
   // 비는 갈래는 제목도 내지 않는다. 빈 제목만 남으면 아직 안 채운 것처럼 읽힌다

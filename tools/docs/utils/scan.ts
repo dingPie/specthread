@@ -15,12 +15,16 @@ import type { FileKindsConfig, SpecthreadConfig } from "../config.schema.ts";
 export const REPO_ROOT = normalize(process.cwd());
 
 /** config.fileKinds 에서 확장자 → kind 역매핑을 만든다 */
-const buildExtMap = (kinds: FileKindsConfig): Map<string, FileKind> => {
+export const buildExtMap = (kinds: FileKindsConfig): Map<string, FileKind> => {
   const map = new Map<string, FileKind>();
   for (const ext of kinds.doc) map.set(ext.toLowerCase(), "doc");
   for (const ext of kinds.source) map.set(ext.toLowerCase(), "source");
   return map;
 };
+
+/** doc 확장자 Set. 링크 대상이 문서인지 판정할 때 쓴다 */
+export const docExtSet = (kinds: FileKindsConfig): Set<string> =>
+  new Set(kinds.doc.map((e) => e.toLowerCase()));
 
 /** 확장자로 파일 종류를 결정한다. config.fileKinds 기반 */
 const kindFromPath = (file: string, extMap: Map<string, FileKind>): FileKind | null => {
