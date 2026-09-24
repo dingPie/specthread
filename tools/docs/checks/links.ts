@@ -1,8 +1,8 @@
 import { RULE } from '../constants/rules.ts';
 /** 링크 유효성 - 대상 파일이 있는가, 앵커가 실제 헤딩을 가리키는가. */
 import { existsSync } from 'node:fs';
-import { join, dirname, normalize } from 'node:path';
-import { REPO_ROOT } from '../utils/scan.ts';
+import { join, dirname, extname, normalize } from 'node:path';
+import { REPO_ROOT, docExtSet } from '../utils/scan.ts';
 import { inChangeLog, inRefSection, isTargetDoc } from '../utils/scope.ts';
 import type { DocIndex, Finding } from '../types.ts';
 
@@ -17,6 +17,7 @@ const isExternal = (target: string) => /^(https?:|mailto:)/.test(target);
  */
 export const checkLinks = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
+  const docExts = docExtSet(index.config.fileKinds);
 
   for (const file of index.files.values()) {
     if (!isTargetDoc(file, index.config)) continue;
@@ -49,7 +50,7 @@ export const checkLinks = (index: DocIndex): Finding[] => {
         });
         continue;
       }
-      if (!link.anchor || !rel.endsWith('.md')) continue;
+      if (!link.anchor || !docExts.has(extname(rel).toLowerCase())) continue;
 
       const target = index.files.get(rel);
       // 색인 범위 밖 문서 (archive 등) 는 앵커를 확인하지 않는다
