@@ -103,6 +103,15 @@ const nearestDocName = (left: string, knownStems: Set<string>): string | null =>
   return /[가-힣]/.test(left.slice(best.end)) ? null : best.text;
 };
 
+/**
+ * 링크 대상을 상대 경로 표기로 맞춘다.
+ *
+ * 링크 대상은 항상 그 문서 기준 상대 경로다. `./` 가 없는 `b.md` 를 그대로 넘기면
+ * 파일 이름 색인으로 찾게 되어, 같은 이름의 문서가 여럿이면 다른 문서로 풀린다.
+ */
+const asRelativePath = (target: string): string =>
+  /^\.{1,2}\//.test(target) ? target : `./${target}`;
+
 /** 참조 해소에 필요한 문맥. 색인 대상 문서 목록에서 한 번 만들어 돌려 쓴다 */
 export interface RefContext {
   mdPaths: string[];
@@ -155,8 +164,17 @@ export const parseSectionRefs = (
       // 링크로 바꾸라고 요구하는 것 자체가 성립하지 않는다 (`rules.md` §3-5 가 코드
       // 주석에 링크가 없다고 인정한 것과 같은 상황). 절 존재 검사는 그대로 받는다
       const linked = span !== undefined || mask?.[m.index] === true;
+
+      // 같은 문서 앵커 (`(#...)`) 는 대상 경로가 비어 있다. 자기 문서 참조다
+      if (span?.target === "") {
+        out.push({ num: m[1], targetFile: path, rawTarget: null, reason: "resolved", linked, line: i + 1 });
+        continue;
+      }
+
       const docName =
-        span?.target ?? nearestDocName(line.slice(0, m.index), knownStems);
+        span === undefined
+          ? nearestDocName(line.slice(0, m.index), knownStems)
+          : asRelativePath(span.target);
 
       // 백틱 안에 문서명 없이 들어앉은 `§N` 은 표기법 인용이라 참조가 아니다
       if (mask?.[m.index] && docName === null) {

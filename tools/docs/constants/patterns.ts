@@ -8,12 +8,29 @@
  * 한 검사만 쓰는 정규식은 그 파일에 둔다. 여기 모으면 어디서 쓰는지 알 수 없어진다.
  */
 
+/** 마커·항목 id 의 두 부분. 종류는 영소문자, slug 는 영소문자·숫자·하이픈 */
+const KIND = '[a-z]+';
+const SLUG = '[a-z0-9][a-z0-9-]*';
+
+/** 코드·문서 마커. 종류와 slug 를 캡처한다 */
+export const MARKER = new RegExp(`PENDING::(${KIND})::(${SLUG})`, 'g');
+
+/** JSON 안 마커. 데이터에는 주석을 못 달아서 필드로 표기한다 */
+export const PENDING_JSON = new RegExp(`"_pending"\\s*:\\s*"(${KIND})::(${SLUG})"`, 'g');
+
+/** 관리 문서 항목 헤딩. id (`종류::slug`) 와 제목을 캡처한다 */
+export const ITEM_HEADING = new RegExp(`^###\\s+\`\\[(${KIND}::${SLUG})\\]\`\\s*(.*)$`);
+
+/** `li` 로 적힌 항목. 정본에서는 헤딩이어야 한다 */
+export const ITEM_AS_LI = new RegExp(`^\\s*-\\s+\`\\[${KIND}::${SLUG}\\]\``);
+
 /**
- * em dash. 리터럴로 적으면 치환 훅이 그 파일을 고쳐 검사를 무력화한다.
+ * 미확정 항목 세 모양. 종류와 slug 를 캡처한다.
  *
- * 훅 설정에 기대지 않고 손상을 막으려고 이스케이프로 둔다.
+ * 관리 문서 항목은 `###` 헤딩 (`` `[slug]` ``), 문서 미확정 사항 절은 생성된 백링크
+ * (`` [`slug`](...) ``), 둘 다 아닌 `li` (`` - `[slug]` ``) 는 낡은 형식이다.
  */
-export const EM_DASH = '\u2014';
+export const PENDING_ITEM = new RegExp(`^(?:\\s*-|###)\\s+[\`\\[]+(${KIND})::(${SLUG})[\`\\]]+`);
 
 /**
  * 관리 문서 항목의 시점 표기 (`rules.md` §4-2).

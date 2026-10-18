@@ -5,7 +5,8 @@
  * 펜스 코드블록 안은 전부 무시한다. 템플릿이 골격을 코드블록으로 담고 있어서
  * 추적하지 않으면 헤딩 88 개와 링크 90 개가 오탐으로 잡힌다.
  */
-import { TAIL_NAMES } from "../constants/docs.ts";
+import { TAIL, TAIL_NAMES } from "../constants/docs.ts";
+import { MARKER, PENDING_ITEM, PENDING_JSON } from "../constants/patterns.ts";
 import { slugify, splitHeadingNum } from "./anchor.ts";
 import type {
   AnchorLabelSpan,
@@ -21,7 +22,7 @@ import type {
 /**
  * 꼬리 절 이름. 하나가 나오면 그 뒤는 전부 꼬리다.
  *
- * 꼬리 절은 문서 맨 끝에 순서대로 오므로 (`docs/system/rules.md` 규칙 8) 첫 꼬리
+ * 꼬리 절은 문서 맨 끝에 순서대로 오므로 (`specthread/rules.md` §2-5) 첫 꼬리
  * 헤딩부터 파일 끝까지를 꼬리로 보면 된다. 하위 절 (`### 문서` 등) 도 따라 잡힌다.
  */
 const TAIL_SET = new Set<string>(TAIL_NAMES);
@@ -99,19 +100,6 @@ export const linkTargetSpans = (line: string): Range[] => {
   return spans;
 };
 
-/** 마커. 종류와 slug 를 함께 캡처한다 */
-const MARKER = /PENDING::([a-z]+)::([a-z0-9][a-z0-9-]*)/g;
-/** JSON 안 마커. 데이터에는 주석을 못 달아서 필드로 표기한다 */
-const PENDING_JSON = /"_pending"\s*:\s*"([a-z]+)::([a-z0-9][a-z0-9-]*)"/g;
-/**
- * 미확정 항목. 마커와 달리 `PENDING` 접두가 없다.
- *
- * 세 모양을 받는다 - 관리 문서 항목은 `###` 헤딩 (`` `[slug]` ``), 문서 미확정 사항
- * 절은 생성된 백링크 (`` [`slug`](...) ``), 둘 다 아닌 `li` (`` - `[slug]` ``) 는
- * 낡은 형식이다. 형식 판정은 `checks/pending.ts` 가 하고 여기는 세는 일만 한다.
- */
-const PENDING_ITEM =
-  /^(?:\s*-|###)\s+[`\[]+([a-z]+)::([a-z0-9][a-z0-9-]*)[`\]]+/;
 /** 마크다운 링크. 대상에 공백이 없다고 보고 잡는다 */
 const LINK = /\[([^\]]*)\]\(([^)\s]+)\)/g;
 /** 변경 이력 표의 첫 칸 날짜 */
@@ -281,12 +269,17 @@ export const parseMarkdown = (
     }
   });
 
-  const changeLogRange = tailRange(headings, "변경 이력", lines.length);
+  const changeLogRange = tailRange(headings, TAIL.CHANGELOG, lines.length);
   // 본문에도 날짜 표가 있을 수 있어서 변경 이력 절 안의 것만 센다
   const inLog = (line: number) =>
     changeLogRange !== null &&
     line >= changeLogRange.start &&
     line <= changeLogRange.end;
+
+  // 변경 이력은 과거 기록이고 목차는 헤딩의 사본이라 마커로 세지 않는다
+  const tocBlock = findTocBlock(lines);
+  const inToc = (line: number) =>
+    tocBlock !== null && line >= tocBlock.start && line <= tocBlock.end;
 
   return {
     path,
@@ -294,11 +287,11 @@ export const parseMarkdown = (
     lines,
     headings,
     links,
-    markers: parseMarkers(lines, "doc", path),
+    markers: parseMarkers(lines, "doc", path).filter((m) => !inLog(m.line) && !inToc(m.line)),
     pendingItems,
-    tocBlock: findTocBlock(lines),
-    refSection: tailRange(headings, "참조", lines.length),
-    pendingSection: tailRange(headings, "미확정 사항", lines.length),
+    tocBlock,
+    refSection: tailRange(headings, TAIL.REFS, lines.length),
+    pendingSection: tailRange(headings, TAIL.PENDING, lines.length),
     changeLogRange,
     changeLogDates: dated.filter((d) => inLog(d.line)).map((d) => d.date),
   };
