@@ -5,7 +5,7 @@ import { RULE } from '../constants/rules.ts';
  * 목차와 같은 구조다 - 본문에 이미 있는 정보를 문서 하단에 한 번 더 적는 자리라
  * 손으로 관리하면 반드시 어긋난다. 생성 결과와 다르면 지적한다.
  */
-import { isTargetDoc } from "../utils/scope.ts";
+import { isDoc } from "../utils/scope.ts";
 import { referenceBlock } from "../gen/references.ts";
 import type { DocIndex, Finding } from "../types.ts";
 
@@ -17,7 +17,7 @@ export const checkReferences = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (!isTargetDoc(file, index.config)) continue;
+    if (!isDoc(file)) continue;
 
     // 본문 링크가 없으면 참조 절을 둘 이유가 없다
     const expected = referenceBlock(file, index.config);

@@ -12,16 +12,14 @@
  * **소비자가 둘이다.** `bin/generate.ts` 가 파일에 쓰고, `checks/pending.ts` 가 같은
  * 함수를 불러 지금 내용과 비교한다.
  */
-import { TIMEPOINT } from '../constants/patterns.ts';
+import { PENDING_PATH } from '../constants/paths.ts';
+import { ITEM_HEADING, TIMEPOINT } from '../constants/patterns.ts';
 import { slugify } from '../utils/anchor.ts';
+import { isWorkDoc } from '../utils/scope.ts';
 import type { DocIndex, IndexedFile } from '../types.ts';
 
 /** 관리 문서인지. 표는 그 한 파일에만 붙는다 */
-export const isPendingDoc = (file: IndexedFile, index: DocIndex): boolean =>
-  file.path === index.config.pending;
-
-/** 항목 헤딩. id 와 제목을 함께 캡처한다 */
-const ITEM_HEADING = /^###\s+`\[([a-z]+::[a-z0-9][a-z0-9-]*)\]`\s*(.*)$/;
+export const isPendingDoc = (file: IndexedFile): boolean => file.path === PENDING_PATH;
 
 /** 항목 첫 본문 줄의 시점 표기 */
 const TIMEPOINT_LINE = new RegExp(`^${TIMEPOINT.source}$`);
@@ -72,7 +70,7 @@ const sections = (lines: string[]): SectionRange[] => {
 const markerSites = (index: DocIndex): Map<string, number> => {
   const out = new Map<string, number>();
   for (const file of index.files.values()) {
-    if (file.path.startsWith(index.config.work)) continue;
+    if (isWorkDoc(file.path, index.config)) continue;
     for (const marker of file.markers) {
       if (marker.slug === '') continue;
       const id = `${marker.kind}::${marker.slug}`;
@@ -142,7 +140,7 @@ export const applySummary = (
   lines: string[],
   index: DocIndex,
 ): string[] | null => {
-  if (!isPendingDoc(file, index)) return null;
+  if (!isPendingDoc(file)) return null;
 
   const blocks = summaryBlocks(lines, index);
   if (blocks.length === 0) return null;
@@ -150,6 +148,8 @@ export const applySummary = (
   let next = lines;
   let changed = false;
   for (const { blockStart, blockEnd, block } of [...blocks].reverse()) {
+    // 억제된 표는 손으로 관리하는 것이다
+    if (file.ignored.has(blockStart)) continue;
     const current = next.slice(blockStart - 1, blockEnd);
     if (current.join('\n') === block.join('\n')) continue;
     next = [...next.slice(0, blockStart - 1), ...block, ...next.slice(blockEnd)];

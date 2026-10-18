@@ -1,6 +1,7 @@
 import { RULE } from '../constants/rules.ts';
-/** 변경 이력 순서 - 오래된 순이어야 한다 (`docs/system/rules.md` §2-4). */
-import { isTargetDoc } from '../utils/scope.ts';
+/** 변경 이력 순서 - 오래된 순이어야 한다 (`specthread/rules.md` §2-4). */
+import { TAIL } from '../constants/docs.ts';
+import { isDoc } from '../utils/scope.ts';
 import type { DocIndex, Finding } from '../types.ts';
 
 /**
@@ -13,13 +14,13 @@ export const checkChangeLog = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (!isTargetDoc(file, index.config)) continue;
+    if (!isDoc(file)) continue;
     if (file.changeLogDates.length < 2) continue;
     const dates = file.changeLogDates;
     const bad = dates.findIndex((d, i) => i > 0 && d < dates[i - 1]);
     if (bad < 0) continue;
 
-    const heading = file.headings.find((h) => h.title === '변경 이력');
+    const heading = file.headings.find((h) => h.title === TAIL.CHANGELOG);
     findings.push({
       file: file.path,
       line: heading?.line ?? 1,

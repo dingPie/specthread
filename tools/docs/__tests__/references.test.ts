@@ -17,6 +17,7 @@ const at = (path: string, ...lines: string[]): IndexedFile => ({
 const indexed = (...lines: string[]): IndexedFile => at('docs/x.md', ...lines);
 
 const toIndex = (file: IndexedFile): DocIndex => ({
+  root: '/',
   files: new Map([[file.path, file]]),
   docsByName: new Map(),
   config: cfg,

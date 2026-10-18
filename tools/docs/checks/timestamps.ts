@@ -1,7 +1,7 @@
 import { timepointGlobal } from '../constants/patterns.ts';
 import { RULE } from '../constants/rules.ts';
 /**
- * 본문 시점 표기 - 날짜를 본문에 남기지 않는가 (`docs/system/rules.md` §2-1).
+ * 본문 시점 표기 - 날짜를 본문에 남기지 않는가 (`specthread/rules.md` §2-1).
  *
  * 문서 본문은 현재 상태와 근거만 서술하고, _누가 언제 무엇을 뒤집었는가_ 는 변경 이력이
  * 갖는다. §2-1 이 금지하는 다섯 가지 중 **날짜만** 여기서 본다. 나머지 (시점을 함의하는
@@ -9,7 +9,7 @@ import { RULE } from '../constants/rules.ts';
  * 검토에 맡긴다 - `신규 5 종` 같은 콘텐츠 서술까지 걸린다.
  */
 import { codeSpanMask, linkTargetSpans } from "../utils/parse.ts";
-import { inChangeLog, inToc, isTargetDoc } from "../utils/scope.ts";
+import { inChangeLog, inPendingSection, inToc, isDoc } from "../utils/scope.ts";
 import type { DocIndex, Finding } from "../types.ts";
 
 const DATE = /20\d\d-\d\d-\d\d/g;
@@ -25,7 +25,7 @@ export const checkTimestamps = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (!isTargetDoc(file, index.config)) continue;
+    if (!isDoc(file)) continue;
 
     let fence = false;
     file.lines.forEach((text, i) => {
@@ -35,8 +35,8 @@ export const checkTimestamps = (index: DocIndex): Finding[] => {
       }
 
       const line = i + 1;
-      // 펜스는 예시, 변경 이력은 날짜가 있어야 하는 자리, 목차는 헤딩을 복사한 생성물이다
-      if (fence || inChangeLog(file, line) || inToc(file, line)) return;
+      // 펜스는 예시, 변경 이력은 날짜가 있어야 하는 곳, 목차·미확정 사항 절은 생성물이다
+      if (fence || inChangeLog(file, line) || inToc(file, line) || inPendingSection(file, line)) return;
 
       const mask = codeSpanMask(text);
       const urls = linkTargetSpans(text);
