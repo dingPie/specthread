@@ -56,8 +56,41 @@ const stripJsonComments = (text: string): string => {
   return result;
 };
 
+/**
+ * 닫는 괄호 앞 쉼표를 지운다. 주석을 지운 뒤에 돌린다.
+ *
+ * JSONC 는 trailing comma 를 허용하고, Prettier 도 .jsonc 를 저장할 때 기본으로 넣는다.
+ * 이걸 막으면 포맷만 해도 설정 파일을 읽지 못한다.
+ */
+const stripTrailingCommas = (text: string): string => {
+  let result = "";
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+    } else if (inString) {
+      if (ch === "\\") escapeNext = true;
+      if (ch === '"') inString = false;
+    } else if (ch === '"') {
+      inString = true;
+    } else if (ch === ",") {
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) j++;
+      if (text[j] === "}" || text[j] === "]") continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
+};
+
 const parseJsonc = (text: string): unknown =>
-  JSON.parse(stripJsonComments(text));
+  JSON.parse(stripTrailingCommas(stripJsonComments(text)));
 
 // ---------------------------------------------------------------------------
 // Deep merge — 중첩 객체만 재귀, 배열은 덮어쓰기

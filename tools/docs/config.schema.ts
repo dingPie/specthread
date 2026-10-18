@@ -74,21 +74,6 @@ export interface MarkersConfig {
 }
 
 // ---------------------------------------------------------------------------
-// 문서 유형
-// ---------------------------------------------------------------------------
-
-export interface FrontmatterSchema {
-  required: string[];
-  optional: string[];
-}
-
-export interface DocTypeConfig {
-  path: string;
-  template: string;
-  frontmatter?: FrontmatterSchema;
-}
-
-// ---------------------------------------------------------------------------
 // 검사 제어
 // ---------------------------------------------------------------------------
 
@@ -126,9 +111,6 @@ export interface SpecthreadConfig {
 
   features: FeaturesConfig;
   markers: MarkersConfig;
-
-  /** 미구현. 값을 넣어도 동작하지 않는다 - 템플릿·프론트매터 강제는 아직 없다 */
-  docTypes: Record<string, DocTypeConfig>;
 
   /**
    * 문서명 해소 시 무시할 단어.
@@ -218,7 +200,6 @@ export const DEFAULT_CONFIG: SpecthreadConfig = {
     types: ["system"],
     timepoints: [],
   },
-  docTypes: {},
   ignoreDocNames: [],
   skipCheck: [],
   skipRefs: [],
