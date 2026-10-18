@@ -2,7 +2,7 @@
  * 참조 절 생성 - 본문 링크를 대상별로 모아 문서 하단 `## 참조` 절을 채운다.
  *
  * 참조 절은 **이 문서를 이해하려면 읽어야 하는 대상 목록** 이고, 대상의 어느 절을
- * 읽어야 하는지는 본문 인라인 링크가 갖는다 (`docs/system/rules.md` §3-3). 그래서
+ * 읽어야 하는지는 본문 인라인 링크가 갖는다 (`specthread/rules.md` §3-3). 그래서
  * 라벨의 `§` 표기와 앵커는 떼고 파일만 남긴다 - 같은 대상을 한 줄로 합칠 때 서로
  * 다른 앵커 중 하나를 고를 근거도 없다.
  *
@@ -15,6 +15,7 @@
  */
 import { basename, dirname, extname, join, normalize } from "node:path";
 import type { SpecthreadConfig } from "../config.schema.ts";
+import { TAIL } from "../constants/docs.ts";
 import { docExtSet } from "../utils/scan.ts";
 import { wantsRefSection } from "../utils/scope.ts";
 import type { DocIndex, IndexedFile } from "../types.ts";
@@ -133,21 +134,21 @@ export const referenceBlock = (file: IndexedFile, config: SpecthreadConfig): str
 /**
  * 참조 절을 새로 넣은 줄 목록.
  *
- * 꼬리 절 순서가 참조 → 미확정 사항 → 변경 이력 이므로 (`docs/system/rules.md`
- * 규칙 8) 뒤 두 개 중 먼저 오는 것 앞에 놓는다. 꼬리 절이 하나도 없으면 파일 끝에
+ * 꼬리 절 순서가 참조 → 미확정 사항 → 변경 이력 이므로 (`specthread/rules.md`
+ * §2-5) 뒤 두 개 중 먼저 오는 것 앞에 놓는다. 꼬리 절이 하나도 없으면 파일 끝에
  * 붙이고, 이때만 앞에 빈 줄을 하나 둔다 - 다른 자리는 앞 절이 이미 빈 줄로 끝난다.
  */
 const insert = (file: IndexedFile, lines: string[], block: string[]): string[] => {
   const nextTail = file.headings.find((h) => h.level === 2 && h.tail);
   if (nextTail !== undefined) {
     const at = nextTail.line - 1;
-    return [...lines.slice(0, at), "## 참조", ...block, ...lines.slice(at)];
+    return [...lines.slice(0, at), `## ${TAIL.REFS}`, ...block, ...lines.slice(at)];
   }
 
   // 파일 끝 빈 줄은 버린다. 블록이 빈 줄로 끝나므로 줄바꿈은 그쪽이 갖는다
   let end = lines.length;
   while (end > 0 && lines[end - 1].trim() === "") end--;
-  return [...lines.slice(0, end), "", "## 참조", ...block];
+  return [...lines.slice(0, end), "", `## ${TAIL.REFS}`, ...block];
 };
 
 /**
@@ -165,6 +166,8 @@ export const applyReferences = (
   if (file.refSection === null) return insert(file, lines, block);
 
   const { start, end } = file.refSection;
+  // 억제된 블록은 손으로 관리하는 것이다
+  if (file.ignored.has(start)) return null;
   const current = lines.slice(start - 1, end);
   // 이미 맞으면 건드리지 않는다. 생성기를 두 번 돌려도 결과가 같아야 한다
   if (current.join("\n") === block.join("\n")) return null;

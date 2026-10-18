@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { checkMarkers } from '../checks/markers.ts';
-import { DEFAULT_CONFIG } from '../config.schema.ts';
+import { DEFAULT_CONFIG, type SpecthreadConfig } from '../config.schema.ts';
+import { PENDING_PATH } from '../constants/paths.ts';
+import { isIgnored } from '../utils/ignore.ts';
 import { parseMarkdown } from '../utils/parse.ts';
 import type { DocIndex, IndexedFile } from '../types.ts';
 
@@ -11,14 +13,17 @@ const md = (path: string, ...lines: string[]): IndexedFile => ({
   ignored: new Set(),
 });
 
-const indexOf = (files: IndexedFile[]): DocIndex => ({
+const CONFIG: SpecthreadConfig = { ...DEFAULT_CONFIG, markers: { types: ['system', 'deps'], timepoints: [] } };
+
+const indexOf = (files: IndexedFile[], config = CONFIG): DocIndex => ({
+  root: '/',
   files: new Map(files.map((f) => [f.path, f])),
   docsByName: new Map(),
-  config: DEFAULT_CONFIG,
+  config,
 });
 
 const PENDING = md(
-  DEFAULT_CONFIG.pending,
+  PENDING_PATH,
   '# pending',
   '## 2. 도메인',
   '### `[deps::pierce-step]` pierce 적용 step',
@@ -52,7 +57,7 @@ test('마커가 하나도 없는 항목은 미확정으로 잡는다', () => {
 
 test('@specthread-ignore 가 붙은 항목은 마커가 없어도 지적하지 않는다', () => {
   const pending: IndexedFile = {
-    ...parseMarkdown(DEFAULT_CONFIG.pending, [
+    ...parseMarkdown(PENDING_PATH, [
       '# pending',
       '## 3. 시스템',
       '<!-- @specthread-ignore -->',
@@ -63,7 +68,9 @@ test('@specthread-ignore 가 붙은 항목은 마커가 없어도 지적하지 �
     sectionRefs: [],
     ignored: new Set([3, 4]),
   };
-  const findings = checkMarkers(indexOf([pending]));
+  // 억제는 검사 실행부가 일괄로 거른다. 지적이 항목 헤딩 줄에 달려야 걸러진다
+  const index = indexOf([pending]);
+  const findings = checkMarkers(index).filter((f) => !isIgnored(index, f));
   assert.deepEqual(findings, []);
 });
 
@@ -74,4 +81,29 @@ test('TEMP_* 구 형식 마커는 무시된다', () => {
     findings.map((f) => f.rule),
     ['marker/unmarked'], // pierce-step 만 미확정으로 잡힌다 (TEMP_* 는 파싱하지 않는다)
   );
+});
+
+test('types 에 없는 종류의 마커와 항목을 지적한다', () => {
+  const spec = md('docs/spec/battle.md', '# battle', 'PENDING::deps::pierce-step 여기 걸린다');
+  const findings = checkMarkers(indexOf([PENDING, spec], DEFAULT_CONFIG));
+  assert.deepEqual(
+    findings.map((f) => `${f.file}:${f.line} ${f.rule}`).sort(),
+    ['docs/spec/battle.md:2 marker/unknown-type', `${PENDING_PATH}:3 marker/unknown-type`],
+  );
+});
+
+test('변경 이력과 목차 안의 마커는 세지 않는다', () => {
+  const spec = md(
+    'docs/spec/battle.md',
+    '# battle',
+    '',
+    '**목차**',
+    '',
+    '- [1. PENDING::deps::gone 개요](#1-pendingdepsgone-개요)',
+    '',
+    '## 변경 이력',
+    '',
+    '| 2026-01-01 | PENDING::deps::old 해소 |',
+  );
+  assert.deepEqual(spec.markers, []);
 });

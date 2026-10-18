@@ -1,11 +1,11 @@
-import { RULE } from '../constants/rules.ts';
+import { RULE } from "../constants/rules.ts";
 /**
  * 목차 ↔ `##` 헤딩 일치.
  *
  * 목차는 생성기가 채우지만 사람이 손으로 고칠 수 있고, 절을 하나 끼워 넣으면
- * 조용히 어긋난다. 생성 결과와 다르면 지적한다 - 고치는 방법은 `pnpm docs:generate --write` 다.
+ * 조용히 어긋난다. 생성 결과와 다르면 지적한다 - 고치는 방법은 `specthread gen --write` 다.
  */
-import { isTargetDoc, singleTitle } from "../utils/scope.ts";
+import { isDoc, singleTitle } from "../utils/scope.ts";
 import { tocBlock } from "../gen/toc.ts";
 import type { DocIndex, Finding } from "../types.ts";
 
@@ -13,8 +13,7 @@ export const checkToc = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (!isTargetDoc(file, index.config)) continue;
-    if (singleTitle(file) === null) continue;
+    if (singleTitle(file) === null || !isDoc(file)) continue;
 
     // `##` 절이 없으면 목차를 둘 이유가 없다
     const expected = tocBlock(file.headings);

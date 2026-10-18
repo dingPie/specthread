@@ -9,7 +9,7 @@
  * 어느 파일을 열어야 하는지 나온다. 한 파일이 한 군을 갖고, 한 군은 여러 검사를 갖는다 -
  * 같은 파싱을 반복하지 않기 위해서다.
  *
- * 규칙 본문은 `docs/system/rules.md` 가 갖고 각 절이 자기 id 를 병기한다.
+ * 규칙 본문은 `specthread/rules.md` 가 갖고 각 절이 자기 id 를 병기한다.
  */
 
 export const RULE = {
@@ -24,6 +24,8 @@ export const RULE = {
     NUMBERED_TAIL: 'heading/numbered-tail',
     /** 꼬리 절 예약어를 본문 절이 쓴다 */
     TAIL_NAME_REUSED: 'heading/tail-name-reused',
+    /** 꼬리 절이 참조 → 미확정 사항 → 변경 이력 순서가 아니다 */
+    TAIL_ORDER: 'heading/tail-order',
   },
   LINK: {
     /** 링크 대상 파일이 없다 */
@@ -36,6 +38,8 @@ export const RULE = {
     ORPHAN: 'marker/orphan',
     /** 관리 문서 항목을 가리키는 마커가 없다 */
     UNMARKED: 'marker/unmarked',
+    /** 마커나 관리 문서 항목의 종류가 `markers.types` 에 없다 */
+    UNKNOWN_TYPE: 'marker/unknown-type',
   },
   PENDING: {
     /** 항목 첫 줄에 본문이 이어붙었다 */
@@ -46,6 +50,8 @@ export const RULE = {
     WORK_LINK: 'pending/work-link',
     /** 시점 표기가 형식에 안 맞는다 */
     TIMEPOINT: 'pending/timepoint',
+    /** 해결 예정 라벨이 `markers.timepoints` 에 없다 */
+    UNKNOWN_TIMEPOINT: 'pending/unknown-timepoint',
     /** 항목이 `li` 로 적혀 있다. 관리 문서 항목은 헤딩이라 앵커를 갖는다 */
     ITEM_SHAPE: 'pending/item-shape',
     /** 절 머리 요약 표가 없다 */
@@ -74,8 +80,6 @@ export const RULE = {
     NO_DOC_NAME: 'section-ref/no-doc-name',
   },
   STYLE: {
-    /** em dash 를 썼다 */
-    EM_DASH: 'style/em-dash',
     /** 코드에 있는 검사 id 가 규칙 문서에 선언되지 않았다 */
     RULE_UNDECLARED: 'style/rule-undeclared',
   },

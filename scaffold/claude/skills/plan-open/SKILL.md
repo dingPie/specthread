@@ -1,4 +1,5 @@
 ---
+name: plan-open
 description: 작업 계획 문서를 작성하고 검수를 거쳐 확정한다
 ---
 

@@ -2,7 +2,7 @@
  * 목차 생성 - `##` 헤딩을 모아 제목 아래 블록을 채운다.
  *
  * 목차는 같은 정보가 두 곳에 생기는 대표 사례라 손으로 관리하면 반드시 어긋난다
- * (`docs/system/rules.md` §2-2). 여기서 만드는 문자열이 검사기의 기대값도 된다.
+ * (`specthread/rules.md` §2-2). 여기서 만드는 문자열이 검사기의 기대값도 된다.
  *
  * **소비자가 둘이다.** `bin/generate.ts` 가 파일에 쓰고, `checks/toc.ts` 가 같은 함수를
  * 불러 지금 내용과 비교한다. 검사기가 생성기를 부르는 것이 거꾸로 보이지만,
@@ -55,6 +55,8 @@ export const applyToc = (file: IndexedFile, lines: string[]): string[] | null =>
 
   if (file.tocBlock !== null) {
     const { start, end } = file.tocBlock;
+    // 억제된 블록은 손으로 관리하는 것이다
+    if (file.ignored.has(start)) return null;
     const current = lines.slice(start - 1, end);
     // 이미 맞으면 건드리지 않는다. 생성기를 두 번 돌려도 결과가 같아야 한다
     if (current.join("\n") === block.join("\n")) {

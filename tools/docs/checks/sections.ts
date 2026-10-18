@@ -8,9 +8,9 @@ import { RULE } from '../constants/rules.ts';
 import { basename, dirname, relative } from "node:path";
 import {
   inChangeLog,
+  inPendingSection,
   inRefSection,
   inToc,
-  isCheckTarget,
   isHeadingLine,
 } from "../utils/scope.ts";
 import type { DocIndex, Finding, SectionRef } from "../types.ts";
@@ -146,15 +146,12 @@ export const checkSectionRefs = (index: DocIndex): Finding[] => {
 
   for (const file of index.files.values()) {
     // 코드·데이터도 문서의 절을 가리키므로 `md` 로 좁히지 않는다
-    if (!isCheckTarget(file.path, index.config)) continue;
-
     for (const ref of file.sectionRefs) {
-      if (file.ignored.has(ref.line) || inChangeLog(file, ref.line))
-        continue;
+      if (inChangeLog(file, ref.line)) continue;
 
       if (isHeadingLine(file, ref.line) || inToc(file, ref.line)) continue;
 
-      if (inRefSection(file, ref.line)) continue;
+      if (inRefSection(file, ref.line) || inPendingSection(file, ref.line)) continue;
 
       const finding = inspect(index, numsByFile, file, ref);
       if (finding !== null) {

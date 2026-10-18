@@ -2,18 +2,20 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { checkPending } from '../checks/pending.ts';
 import { DEFAULT_CONFIG } from '../config.schema.ts';
+import { PENDING_PATH } from '../constants/paths.ts';
 import { parseMarkdown } from '../utils/parse.ts';
 import type { DocIndex, IndexedFile } from '../types.ts';
 
 /** 관리 문서 한 파일만 담은 색인. 검사가 그 경로만 보므로 이름이 중요하다 */
-const indexOf = (lines: string[]): DocIndex => {
-  const path = DEFAULT_CONFIG.pending;
+const indexOf = (lines: string[], config = DEFAULT_CONFIG): DocIndex => {
+  const path = PENDING_PATH;
   const parsed = parseMarkdown(path, lines);
   const file: IndexedFile = { ...parsed, kind: 'doc', lines, sectionRefs: [], ignored: new Set() };
   return {
+    root: '/',
     files: new Map([[path, file]]),
     docsByName: new Map(),
-    config: DEFAULT_CONFIG,
+    config,
   };
 };
 
@@ -172,4 +174,21 @@ test('요약 표가 항목과 어긋나면 지적한다', () => {
     ]),
     ['pending/summary-stale'],
   );
+});
+
+test('timepoints 가 비어 있지 않으면 목록에 없는 해결 예정 라벨을 지적한다', () => {
+  const lines = [
+    '# pending',
+    '',
+    '### `[system::a]` 제목',
+    '',
+    '작성일 2026-05-02 / 해결 예정 M9',
+    '',
+  ];
+  const config = { ...DEFAULT_CONFIG, markers: { types: ['system'], timepoints: ['M1', 'M2'] } };
+  assert.deepEqual(
+    checkPending(indexOf(lines, config)).map((f) => f.rule),
+    ['pending/unknown-timepoint'],
+  );
+  assert.deepEqual(rules(lines), []);
 });

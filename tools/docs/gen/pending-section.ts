@@ -2,7 +2,7 @@
  * 미확정 사항 절 생성 - 관리 문서 항목의 백링크를 문서 기준으로 뒤집는다.
  *
  * 각 관리 문서 항목의 `참조:` 줄이 어느 문서를 가리키는지 이미 안다. 그것을 대상
- * 문서 기준으로 재정렬하면 그 문서의 미확정 목록이 나온다 (`docs/system/rules.md` §4).
+ * 문서 기준으로 재정렬하면 그 문서의 미확정 목록이 나온다 (`specthread/rules.md` §4).
  * 목차·참조 절과 같은 방식이다 - 정본은 관리 문서이고 여기는 생성 뷰다.
  *
  * **이미 절을 가진 문서만 채운다.** 참조는 _이 항목이 이 문서와 관련 있다_ 는
@@ -12,10 +12,13 @@
  * **소비자가 둘이다.** `bin/generate.ts` 가 파일에 쓰고, `checks/pending.ts` 가 같은
  * 함수를 불러 지금 내용과 비교한다.
  */
-import { dirname, join, normalize, relative } from 'node:path';
+import { basename, dirname, join, normalize, relative } from 'node:path';
+import { PENDING_PATH } from '../constants/paths.ts';
+import { ITEM_HEADING } from '../constants/patterns.ts';
+import { eachContentLine } from '../utils/parse.ts';
+import { inChangeLog, isWorkDoc } from '../utils/scope.ts';
 import type { DocIndex, IndexedFile } from '../types.ts';
 
-const ITEM_HEADING = /^###\s+`\[([a-z]+::[a-z0-9][a-z0-9-]*)\]`\s*(.*)$/;
 const REF_LINK = /\]\(([^)\s]+)\)/g;
 
 type Item = { slug: string; title: string; anchor: string };
@@ -24,11 +27,9 @@ type Item = { slug: string; title: string; anchor: string };
 const parseItems = (pending: IndexedFile): { item: Item; targets: Set<string> }[] => {
   const out: { item: Item; targets: Set<string> }[] = [];
   let current: (typeof out)[number] | null = null;
-  let inChangeLog = false;
 
-  pending.lines.forEach((raw, i) => {
-    if (/^## 변경 이력/.test(raw)) inChangeLog = true;
-    if (inChangeLog) return;
+  eachContentLine(pending.lines, (raw, i) => {
+    if (inChangeLog(pending, i + 1)) return;
 
     const h = ITEM_HEADING.exec(raw);
     if (h !== null) {
@@ -74,19 +75,20 @@ export const invertByTarget = (pending: IndexedFile): Map<string, Item[]> => {
  */
 export const pendingSectionBlock = (file: IndexedFile, byTarget: Map<string, Item[]>, index: DocIndex): string[] => {
   if (file.pendingSection === null) return [];
-  if (file.path.startsWith(index.config.work)) return [];
+  if (isWorkDoc(file.path, index.config)) return [];
 
   const items = byTarget.get(file.path) ?? [];
-  const rel = relative(dirname(file.path), index.config.pending);
+  const rel = relative(dirname(file.path), PENDING_PATH);
   const link = rel.startsWith('.') ? rel : `./${rel}`;
+  const name = basename(PENDING_PATH);
 
   if (items.length === 0) {
-    return ['', `해당 없음 - 이 문서를 가리키는 미확정 항목이 없다 ([\`pending.md\`](${link})).`, ''];
+    return ['', `해당 없음 - 이 문서를 가리키는 미확정 항목이 없다 ([\`${name}\`](${link})).`, ''];
   }
 
   return [
     '',
-    `> **정본은 [\`pending.md\`](${link}) 다.** 이 절은 그 항목을 이 문서 기준으로 되짚은 생성 뷰다.`,
+    `> **정본은 [\`${name}\`](${link}) 다.** 이 절은 그 항목을 이 문서 기준으로 되짚은 생성 뷰다.`,
     '',
     ...items.map((it) => `- [\`${it.slug}\`](${link}#${it.anchor}) ${it.title}`),
     '',
@@ -99,15 +101,17 @@ export const applyPendingSection = (
   lines: string[],
   index: DocIndex,
 ): string[] | null => {
-  if (file.path === index.config.pending) return null;
+  if (file.path === PENDING_PATH) return null;
 
-  const pending = index.files.get(index.config.pending);
+  const pending = index.files.get(PENDING_PATH);
   if (pending === undefined) return null;
 
   const block = pendingSectionBlock(file, invertByTarget(pending), index);
   if (block.length === 0 || file.pendingSection === null) return null;
 
   const { start, end } = file.pendingSection;
+  // 억제된 블록은 손으로 관리하는 것이다
+  if (file.ignored.has(start)) return null;
   const current = lines.slice(start - 1, end);
   if (current.join('\n') === block.join('\n')) return null;
 

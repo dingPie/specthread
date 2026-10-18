@@ -8,16 +8,15 @@ npm 패키지 `specthread` 소스 레포. SDD(Spec-Driven Development) 검사/�
 |------|------|
 | `tools/docs/` | 도구 소스 (검사기, 생성기, 파서, CLI) |
 | `scaffold/` | `specthread init` 이 복사하는 템플릿 |
-| `tools/hooks/` | Git hook 스크립트 |
 | `dist/` | 빌드 출력 (gitignore) |
 
 ## 개발
 
 ```bash
 npm run docs:typecheck   # 타입 검사
-npm run docs:test        # 유닛 테스트 (74건)
+npm run docs:test        # 유닛 테스트
 npm run build            # tsc 빌드
-npm run docs:check       # 실 문서 대상 정합성 검사 (scaffold 기반)
+npm run docs:check       # scaffold 검증 (새 init 결과와 템플릿)
 ```
 
 ## 배포

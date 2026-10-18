@@ -1,4 +1,5 @@
 ---
+name: plan-close
 description: 완료된 작업의 내용을 spec에 반영하고 work 문서를 삭제한다
 ---
 

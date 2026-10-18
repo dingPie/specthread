@@ -1,4 +1,5 @@
 ---
+name: plan-run
 description: 확정된 계획 문서에 따라 작업을 실행하고 미결 사항을 기록한다
 ---
 

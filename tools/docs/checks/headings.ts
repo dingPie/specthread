@@ -2,22 +2,19 @@ import { TAIL_NAMES } from '../constants/docs.ts';
 import { RULE } from '../constants/rules.ts';
 /**
  * 헤딩 구조 - 제목이 하나인가, 꼬리 절 이름을 본문에서 재사용하지 않는가,
- * 꼬리 절에 번호가 붙지 않았는가.
+ * 꼬리 절에 번호가 붙지 않았는가, 꼬리 절이 정해진 순서인가.
  *
  * 둘 다 생성기가 자리를 잘못 짚게 만드는 원인이다. 꼬리 절은 이름으로 찾으므로
  * 이름이 겹치면 어느 쪽이 꼬리인지 가릴 수 없고, 번호가 붙으면 규칙 8 과 어긋난다.
  */
-import { isTargetDoc, titleHeadings } from "../utils/scope.ts";
+import { isDoc, tailOrderOk, titleHeadings } from "../utils/scope.ts";
 import type { DocIndex, Finding } from "../types.ts";
-
-/** 꼬리 절 이름. `parse.ts` 의 판정과 같은 목록이어야 한다 */
-
 
 export const checkHeadings = (index: DocIndex): Finding[] => {
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (!isTargetDoc(file, index.config)) continue;
+    if (!isDoc(file)) continue;
 
     // 제목이 둘이면 목차를 어디에 둘지 정할 근거가 없다. 생성기도 이 문서를 건너뛴다
     const titles = titleHeadings(file);
@@ -27,6 +24,17 @@ export const checkHeadings = (index: DocIndex): Finding[] => {
         line: titles[1].line,
         rule: RULE.HEADING.MULTIPLE_TITLE,
         message: `문서 제목이 ${titles.length} 개다 - 하나여야 한다`,
+      });
+    }
+
+    // 순서가 어긋난 문서는 생성기가 건너뛴다. 범위를 원본 줄 번호로 교체하기 때문이다
+    if (!tailOrderOk(file.headings)) {
+      const first = file.headings.find((h) => h.level === 2 && h.tail);
+      findings.push({
+        file: file.path,
+        line: first?.line ?? 1,
+        rule: RULE.HEADING.TAIL_ORDER,
+        message: `꼬리 절은 ${TAIL_NAMES.join(' → ')} 순서로 둔다`,
       });
     }
 

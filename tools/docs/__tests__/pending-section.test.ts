@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_CONFIG } from '../config.schema.ts';
+import { PENDING_PATH } from '../constants/paths.ts';
 import { parseMarkdown } from '../utils/parse.ts';
 import { invertByTarget, pendingSectionBlock } from '../gen/pending-section.ts';
 import type { DocIndex, IndexedFile } from '../types.ts';
@@ -11,10 +12,11 @@ const at = (path: string, ...lines: string[]): IndexedFile => ({
   ignored: new Set(),
 });
 
-const pendingFile = (...lines: string[]): IndexedFile => at('docs/pending.md', ...lines);
+const pendingFile = (...lines: string[]): IndexedFile => at(PENDING_PATH, ...lines);
 
 const mockIndex = (pending: IndexedFile): DocIndex => ({
-  files: new Map([['docs/pending.md', pending]]),
+  root: '/',
+  files: new Map([[PENDING_PATH, pending]]),
   docsByName: new Map(),
   config: DEFAULT_CONFIG,
 });
@@ -31,7 +33,7 @@ test('참조가 가리키는 문서 기준으로 항목을 뒤집는다', () => 
     '',
     '작성일 2026-05-02',
     '',
-    '참조: [`battle.md` §6](./spec/battle.md#6-데미지-공식)',
+    '참조: [`battle.md` §6](../docs/spec/battle.md#6-데미지-공식)',
   );
   const byTarget = invertByTarget(pending);
   assert.deepEqual(byTarget.get('docs/spec/battle.md'), [
@@ -47,7 +49,7 @@ test('한 항목이 여러 문서를 가리키면 양쪽에 다 실린다', () =
     '',
     '작성일 2026-08-16',
     '',
-    '참조: [`dungeon.md`](./spec/dungeon.md), [`economy.md` §2](./spec/economy.md#2-토큰-시스템)',
+    '참조: [`dungeon.md`](../docs/spec/dungeon.md), [`economy.md` §2](../docs/spec/economy.md#2-토큰-시스템)',
   );
   const byTarget = invertByTarget(pending);
   assert.equal(byTarget.get('docs/spec/dungeon.md')?.length, 1);
@@ -69,7 +71,7 @@ test('미확정 사항 절이 없는 문서는 빈 배열이다 - 새로 만들�
     '',
     '작성일 2026-08-16',
     '',
-    '참조: [`STATUS.md`](./STATUS.md)',
+    '참조: [`STATUS.md`](../docs/STATUS.md)',
   );
   const file = at('docs/STATUS.md', '# STATUS', '## 1. 개요', '내용');
   const block = pendingSectionBlock(file, invertByTarget(pending), mockIndex(pending));
@@ -84,9 +86,16 @@ test('docs/work 문서는 절이 있어도 채우지 않는다', () => {
     '',
     '작성일 2026-08-16',
     '',
-    '참조: [`m2a-stage2.md`](./work/m2a-stage2.md)',
+    '참조: [`m2a-stage2.md`](../docs/work/m2a-stage2.md)',
   );
   const file = targetDoc('docs/work/m2a-stage2.md');
   const block = pendingSectionBlock(file, invertByTarget(pending), mockIndex(pending));
   assert.deepEqual(block, []);
+});
+
+test('work 경로는 디렉터리 경계로 판정한다 - docs/workshop.md 는 작업 문서가 아니다', () => {
+  const pending = pendingFile('# pending', '## 2. 도메인');
+  const file = targetDoc('docs/workshop.md');
+  const block = pendingSectionBlock(file, invertByTarget(pending), mockIndex(pending));
+  assert.equal(block.some((l) => l.startsWith('해당 없음')), true);
 });

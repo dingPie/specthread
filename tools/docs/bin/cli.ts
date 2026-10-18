@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { EXIT } from "../constants/exit.ts";
 
 const [command, ...rest] = process.argv.slice(2);
 
@@ -8,8 +9,8 @@ const usage = `specthread - Spec-Driven Development (SDD) 도구
 
 commands:
   init [--tools claude,cursor]   프로젝트에 SDD 체계 초기화
-  init --force                   scaffold 파일을 최신으로 덮어쓰기
-  check                          문서 정합성 검사 (28개 규칙)
+  init --force                   패키지 파일(rules·템플릿·스킬)을 새 버전으로 갱신
+  check                          문서 정합성 검사 (30개 규칙)
   gen [--write]                  참조 절·목차·미확정 사항 요약 생성
   help                           이 도움말 표시
 
@@ -39,7 +40,7 @@ const run = async () => {
       break;
     default:
       console.log(usage);
-      process.exit(command === undefined ? 0 : 1);
+      process.exit(command === undefined ? EXIT.OK : EXIT.FAILURE);
   }
 };
 
