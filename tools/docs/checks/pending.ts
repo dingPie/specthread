@@ -1,22 +1,20 @@
 /**
- * 관리 문서 항목 형식 (`docs/system/rules.md` §4-2).
+ * 관리 문서 항목 형식 (`specthread/rules.md` §4-2).
  *
  * 이 검사는 관리 문서 한 파일에만 걸린다. 항목이 한곳에 모이는 것이 그 문서의 존재
  * 이유라서, 다른 문서에 같은 모양이 나타나면 그건 미확정 사항 절 (생성 뷰) 이고
  * 형식이 다르다 - 뷰는 `li`, 정본은 `###` 헤딩이다.
  */
 import { dirname, join, normalize } from 'node:path';
-import { timepointGlobal } from '../constants/patterns.ts';
+import type { SpecthreadConfig } from '../config.schema.ts';
+import { PENDING_PATH } from '../constants/paths.ts';
+import { ITEM_AS_LI, ITEM_HEADING, timepointGlobal } from '../constants/patterns.ts';
 import { RULE } from '../constants/rules.ts';
 import { summaryBlocks } from '../gen/summary.ts';
 import { invertByTarget, pendingSectionBlock } from '../gen/pending-section.ts';
+import { underPath } from '../utils/path-match.ts';
+import { inChangeLog, isWorkDoc } from '../utils/scope.ts';
 import type { DocIndex, Finding, IndexedFile } from '../types.ts';
-
-/** 항목 헤딩. id 뒤부터 줄 끝까지를 제목으로 본다 */
-const ITEM = /^###\s+`\[[a-z]+::[a-z0-9][a-z0-9-]*\]`(.*)$/;
-
-/** `li` 로 적힌 항목. 정본에서는 헤딩이어야 한다 */
-const ITEM_AS_LI = /^\s*-\s+`\[[a-z]+::[a-z0-9][a-z0-9-]*\]`/;
 
 /**
  * 문장이 끝난 흔적.
@@ -77,10 +75,7 @@ const CODE_SPAN = /`([^`]+)`/g;
 const pointsToWork = (raw: string, dir: string, work: string): boolean => {
   const clean = raw.split('#')[0].trim();
   if (clean === '') return false;
-  const prefix = work.endsWith('/') ? work : `${work}/`;
-  return (
-    normalize(clean).startsWith(prefix) || normalize(join(dir, clean)).startsWith(prefix)
-  );
+  return underPath(normalize(clean), work) || underPath(normalize(join(dir, clean)), work);
 };
 
 const inspectBody = (
@@ -126,8 +121,9 @@ const inspectBody = (
   return findings;
 };
 
-/** 항목 헤딩 다음 첫 내용 줄이 시점인지 */
-const inspectTimepoint = (file: IndexedFile, at: number): Finding[] => {
+/** 항목 헤딩 다음 첫 내용 줄이 시점인지, 해결 예정 라벨이 정의된 것인지 */
+const inspectTimepoint = (file: IndexedFile, at: number, config: SpecthreadConfig): Finding[] => {
+  const { timepoints } = config.markers;
   for (let i = at; i < file.lines.length; i++) {
     const line = file.lines[i].trim();
     if (line === '') continue;
@@ -150,6 +146,18 @@ const inspectTimepoint = (file: IndexedFile, at: number): Finding[] => {
           line: i + 1,
           rule: RULE.PENDING.TIMEPOINT,
           message: `해결 예정에 달력 날짜를 쓰지 않는다 - ${stamp[2].trim()}`,
+        },
+      ];
+    }
+    // 목록이 비어 있으면 라벨을 자유롭게 쓰는 프로젝트다
+    const label = stamp[2]?.trim();
+    if (label !== undefined && timepoints.length > 0 && !timepoints.includes(label)) {
+      return [
+        {
+          file: file.path,
+          line: i + 1,
+          rule: RULE.PENDING.UNKNOWN_TIMEPOINT,
+          message: `해결 예정 ${label} 이 config.markers.timepoints 에 없다`,
         },
       ];
     }
@@ -205,20 +213,20 @@ const inspectSummary = (file: IndexedFile, index: DocIndex): Finding[] => {
 /**
  * 문서 미확정 사항 절 ↔ 관리 문서 백링크 일치.
  *
- * 목차·참조 절과 같은 구조다. `docs/pending.md` 를 제외한 모든 문서가 대상이다 -
+ * 목차·참조 절과 같은 구조다. 관리 문서를 제외한 모든 문서가 대상이다 -
  * 절 자체가 없는 문서는 `gen/pending-section.ts` 가 건드리지 않으므로 지적도 없다.
  */
 const inspectPendingSection = (index: DocIndex): Finding[] => {
-  const pending = index.files.get(index.config.pending);
+  const pending = index.files.get(PENDING_PATH);
   if (pending === undefined) return [];
 
   const byTarget = invertByTarget(pending);
   const findings: Finding[] = [];
 
   for (const file of index.files.values()) {
-    if (file.path === index.config.pending || file.pendingSection === null) continue;
+    if (file.path === PENDING_PATH || file.pendingSection === null) continue;
     // 작업 문서는 생성 대상이 아니다 (pendingSectionBlock 과 같은 조건).
-    if (file.path.startsWith(index.config.work)) continue;
+    if (isWorkDoc(file.path, index.config)) continue;
 
     const expected = pendingSectionBlock(file, byTarget, index);
     const actual = file.lines.slice(file.pendingSection.start - 1, file.pendingSection.end);
@@ -238,21 +246,19 @@ const inspectPendingSection = (index: DocIndex): Finding[] => {
 };
 
 export const checkPending = (index: DocIndex): Finding[] => {
-  const file: IndexedFile | undefined = index.files.get(index.config.pending);
+  const file: IndexedFile | undefined = index.files.get(PENDING_PATH);
   if (file === undefined) return [];
 
   const findings: Finding[] = [];
-  let inChangeLog = false;
 
   file.lines.forEach((raw, i) => {
     const line = i + 1;
-    if (raw.startsWith('## 변경 이력')) inChangeLog = true;
-    if (inChangeLog) return;
+    if (inChangeLog(file, line)) return;
 
-    const item = ITEM.exec(raw);
+    const item = ITEM_HEADING.exec(raw);
     if (item) {
-      findings.push(...inspectHeading(file.path, line, item[1]));
-      findings.push(...inspectTimepoint(file, line));
+      findings.push(...inspectHeading(file.path, line, item[2]));
+      findings.push(...inspectTimepoint(file, line, index.config));
       return;
     }
     findings.push(...inspectBody(file.path, line, raw, index.config.work));
