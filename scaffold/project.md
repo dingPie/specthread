@@ -28,7 +28,7 @@
 
 ### 2-2. 미확정 사항 파일
 
-이름은 [`pending.md`](./pending.md) 다. `config.jsonc` 에서 경로를 override 할 수 있다.
+이름은 [`pending.md`](./pending.md) 다. 경로는 `specthread/pending.md` 고정이다.
 
 ## 참조
 
