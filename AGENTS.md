@@ -8,6 +8,7 @@ npm 패키지 `specthread` 소스 레포. SDD(Spec-Driven Development) 검사/�
 |------|------|
 | `tools/docs/` | 도구 소스 (검사기, 생성기, 파서, CLI) |
 | `scaffold/` | `specthread init` 이 복사하는 템플릿 |
+| `tools/hooks/` | 이 레포의 Claude Code 훅 (em dash 치환). 배포하지 않음 |
 | `dist/` | 빌드 출력 (gitignore) |
 
 ## 개발
