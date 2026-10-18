@@ -45,6 +45,8 @@ ${wrapList(c.fileKinds.source, "      ")}
   // ── 스캔 대상 경로 ───────────────────────────────────────────────
   // 자유 KV. 키는 용도 라벨, 값은 경로 배열.
   // 디렉터리면 재귀 스캔, 파일이면 직접 로드.
+  // 적으면 기본값을 통째로 교체한다 (키 단위로 합치지 않는다).
+  // specthread/ 의 rules·pending·project 는 여기 없어도 항상 읽는다.
   // 예: "source": ["client/src/"], "data": ["data/"]
   //     "meta": ["CLAUDE.md", "AGENTS.md"]
   "path": {
@@ -58,8 +60,6 @@ ${Object.entries(c.path)
   "features": {
     // 마커 체계 전체. false → marker/*, pending/* 검사 + pending 추적 비활성화
     "markers": ${c.features.markers},
-    // em dash 검사. false → style/em-dash 비활성화
-    "emDash": ${c.features.emDash},
     // 참조 절 자동 생성. false → reference/* 검사 + gen references 스킵
     "references": ${c.features.references}
   },
@@ -67,10 +67,11 @@ ${Object.entries(c.path)
   // ── 마커 체계 ────────────────────────────────────────────────────
   "markers": {
     // 마커 종류. "system" 은 코어 예약, 나머지는 프로젝트 정의.
+    // 여기 없는 종류의 마커·항목은 marker/unknown-type 으로 지적한다.
     // 예: ["system", "design", "balance", "deps"]
     "types": ${inlineList(c.markers.types)},
-    // 처리 시점 라벨. 마일스톤 등.
-    // 예: ["M1", "M2", "M3"]
+    // 처리 시점 라벨. 마일스톤 등. 비어 있으면 해결 예정 라벨을 검사하지 않는다.
+    // 예: ["M1", "M2", "P01-123"]
     "timepoints": ${inlineList(c.markers.timepoints)}
   }
 
@@ -79,25 +80,19 @@ ${Object.entries(c.path)
   // "ignoreDocNames": ["spec"]
 
   // ── 검사 제외 (기본값: []) ───────────────────────────────────────
-  // 경로 prefix 로 전체 검사를 건너뛰거나, 특정 군만 검사한다.
+  // 경로 아래의 검사·생성을 전부 건너뛰거나, 특정 군만 남긴다.
+  // specthread/templates/ 와 설정 파일은 적지 않아도 항상 제외한다.
   // "skipCheck": [
   //   "docs/archive/",
   //   { "path": "docs/drafts/", "only": ["heading", "link"] }
   // ]
 
   // ── 참조 절 생성 제외 (기본값: []) ──────────────────────────────
-  // 이 경로 prefix 의 문서에는 참조 절을 생성하지 않는다.
-  // "skipRefs": ["specthread/templates/"]
+  // 이 경로 아래의 문서에는 참조 절을 생성하지 않는다.
+  // "skipRefs": ["CLAUDE.md", "docs/drafts/"]
 
-  // ── 로케일 (기본값: "ko") ───────────────────────────────────────
-  // 현재 한국어 고정. 검사 메시지, 꼬리 절 이름, 시점 정규식 등에 영향.
-  // "locale": "ko"
-
-  // ── 규약 경로 ────────────────────────────────────────────────────
-  // 도구가 직접 읽고 쓰는 파일. path 와 별개.
-  // "rules": "${c.rules}",
-  // "pending": "${c.pending}",
-  // "project": "${c.project}",
-  // "work": "${c.work}"
+  // ── 작업 문서 폴더 (기본값: "${c.work}/") ─────────────────────────
+  // 흡수 후 지우는 계획 문서. 미확정 사항 절을 만들지 않는다.
+  // "work": "${c.work}/"
 }
 `;

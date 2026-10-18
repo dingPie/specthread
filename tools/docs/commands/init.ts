@@ -1,7 +1,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { basename, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEFAULT_CONFIG } from "../config.schema.ts";
+import {
+  CONFIG_PATH,
+  LOCAL_CONFIG_PATH,
+  PENDING_PATH,
+  PROJECT_PATH,
+  RULES_PATH,
+  SPECTHREAD_DIR,
+  TEMPLATES_DIR,
+} from "../constants/paths.ts";
 import { renderConfig } from "./config-template.ts";
 
 const SPECTHREAD_START = "<!-- specthread:start -->";
@@ -9,9 +18,11 @@ const SPECTHREAD_END = "<!-- specthread:end -->";
 
 const scaffoldDir = (): string => {
   const thisFile = dirname(fileURLToPath(import.meta.url));
+  // dist/commands, dist, tools/docs/commands (소스에서 실행) 순
   const candidates = [
     join(thisFile, "..", "..", "scaffold"),
     join(thisFile, "..", "scaffold"),
+    join(thisFile, "..", "..", "..", "scaffold"),
   ];
   for (const dir of candidates) {
     if (existsSync(dir)) return dir;
@@ -87,26 +98,24 @@ const ensureClaudeMd = (cwd: string): void => {
   console.log("  CLAUDE.md @AGENTS.md 추가");
 };
 
-const LOCAL_CONFIG = "specthread/config.local.jsonc";
-
 /** 개인 설정이 커밋되지 않게 한다. 이미 적혀 있으면 건드리지 않는다 */
 const ensureGitignore = (cwd: string): void => {
   const dest = join(cwd, ".gitignore");
 
   if (!existsSync(dest)) {
-    writeFileSync(dest, `${LOCAL_CONFIG}\n`, "utf8");
+    writeFileSync(dest, `${LOCAL_CONFIG_PATH}\n`, "utf8");
     console.log("  .gitignore 생성");
     return;
   }
 
   const content = readFileSync(dest, "utf8");
-  if (content.split(/\r?\n/).some((l) => l.trim() === LOCAL_CONFIG)) {
-    console.log(`  .gitignore 이미 ${LOCAL_CONFIG} 포함`);
+  if (content.split(/\r?\n/).some((l) => l.trim() === LOCAL_CONFIG_PATH)) {
+    console.log(`  .gitignore 이미 ${LOCAL_CONFIG_PATH} 포함`);
     return;
   }
 
-  writeFileSync(dest, `${content.trimEnd()}\n\n# specthread 개인 설정\n${LOCAL_CONFIG}\n`, "utf8");
-  console.log(`  .gitignore ${LOCAL_CONFIG} 추가`);
+  writeFileSync(dest, `${content.trimEnd()}\n\n# specthread 개인 설정\n${LOCAL_CONFIG_PATH}\n`, "utf8");
+  console.log(`  .gitignore ${LOCAL_CONFIG_PATH} 추가`);
 };
 
 const SKILLS = ["check", "gen", "plan-open", "plan-run", "plan-close"];
@@ -132,36 +141,27 @@ export const init = (args: string[]): void => {
   if (force) console.log("specthread init --force\n");
   else console.log("specthread init\n");
 
-  const stDir = join(cwd, "specthread");
+  const stDir = join(cwd, SPECTHREAD_DIR);
   if (existsSync(stDir)) {
-    console.log("  specthread/ 이미 존재 - 기존 설정 유지");
+    console.log(`  ${SPECTHREAD_DIR}/ 이미 존재 - 기존 설정 유지`);
   } else {
     mkdirSync(stDir, { recursive: true });
-    console.log("  specthread/ 생성");
+    console.log(`  ${SPECTHREAD_DIR}/ 생성`);
   }
 
-  const configStatus = putFile(
-    join(stDir, "config.jsonc"),
-    renderConfig(DEFAULT_CONFIG),
-    force,
-  );
-  console.log(`  specthread/config.jsonc ${STATUS_LABEL[configStatus]}`);
+  const configStatus = putFile(join(cwd, CONFIG_PATH), renderConfig(DEFAULT_CONFIG), force);
+  console.log(`  ${CONFIG_PATH} ${STATUS_LABEL[configStatus]}`);
 
-  const specthreadFiles = ["rules.md", "project.md", "pending.md"];
-  for (const file of specthreadFiles) {
-    const status = copyFile(join(scaffold, file), join(stDir, file), force);
-    console.log(`  specthread/${file} ${STATUS_LABEL[status]}`);
+  // scaffold 원본은 고정 경로와 같은 파일 이름을 쓴다
+  for (const dest of [RULES_PATH, PROJECT_PATH, PENDING_PATH]) {
+    const status = copyFile(join(scaffold, basename(dest)), join(cwd, dest), force);
+    console.log(`  ${dest} ${STATUS_LABEL[status]}`);
   }
 
-  const templateFiles = ["spec.md", "plan.md"];
-  const templatesDir = join(stDir, "templates");
-  for (const file of templateFiles) {
-    const status = copyFile(
-      join(scaffold, "templates", file),
-      join(templatesDir, file),
-      force,
-    );
-    console.log(`  specthread/templates/${file} ${STATUS_LABEL[status]}`);
+  for (const file of ["spec.md", "plan.md"]) {
+    const dest = `${TEMPLATES_DIR}/${file}`;
+    const status = copyFile(join(scaffold, "templates", file), join(cwd, dest), force);
+    console.log(`  ${dest} ${STATUS_LABEL[status]}`);
   }
 
   ensureAgentsMd(cwd, scaffold);
