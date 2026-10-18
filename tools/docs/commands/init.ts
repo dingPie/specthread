@@ -87,7 +87,31 @@ const ensureClaudeMd = (cwd: string): void => {
   console.log("  CLAUDE.md @AGENTS.md 추가");
 };
 
-const parseTools = (args: string[]): Set<string> => {
+const LOCAL_CONFIG = "specthread/config.local.jsonc";
+
+/** 개인 설정이 커밋되지 않게 한다. 이미 적혀 있으면 건드리지 않는다 */
+const ensureGitignore = (cwd: string): void => {
+  const dest = join(cwd, ".gitignore");
+
+  if (!existsSync(dest)) {
+    writeFileSync(dest, `${LOCAL_CONFIG}\n`, "utf8");
+    console.log("  .gitignore 생성");
+    return;
+  }
+
+  const content = readFileSync(dest, "utf8");
+  if (content.split(/\r?\n/).some((l) => l.trim() === LOCAL_CONFIG)) {
+    console.log(`  .gitignore 이미 ${LOCAL_CONFIG} 포함`);
+    return;
+  }
+
+  writeFileSync(dest, `${content.trimEnd()}\n\n# specthread 개인 설정\n${LOCAL_CONFIG}\n`, "utf8");
+  console.log(`  .gitignore ${LOCAL_CONFIG} 추가`);
+};
+
+const SKILLS = ["check", "gen", "plan-open", "plan-run", "plan-close"];
+
+const parseTools =(args: string[]): Set<string> => {
   const idx = args.indexOf("--tools");
   if (idx === -1 || idx + 1 >= args.length) return new Set(["claude"]);
   return new Set(args[idx + 1].split(",").map((t) => t.trim().toLowerCase()));
@@ -141,27 +165,28 @@ export const init = (args: string[]): void => {
   }
 
   ensureAgentsMd(cwd, scaffold);
+  ensureGitignore(cwd);
 
   if (tools.has("claude")) {
     ensureClaudeMd(cwd);
 
+    // Claude Code 는 `<이름>/SKILL.md` 만 스킬로 읽는다. 0.1.x 는 `<이름>.md` 로 깔았다
     const skillsDir = join(cwd, ".claude", "skills");
-    if (!existsSync(skillsDir)) mkdirSync(skillsDir, { recursive: true });
-
-    const skillFiles = [
-      "check.md",
-      "gen.md",
-      "plan-open.md",
-      "plan-run.md",
-      "plan-close.md",
-    ];
-    for (const file of skillFiles) {
+    const legacy: string[] = [];
+    for (const name of SKILLS) {
       const status = copyFile(
-        join(scaffold, "claude", "skills", file),
-        join(skillsDir, file),
+        join(scaffold, "claude", "skills", name, "SKILL.md"),
+        join(skillsDir, name, "SKILL.md"),
         force,
       );
-      console.log(`  .claude/skills/${file} ${STATUS_LABEL[status]}`);
+      console.log(`  .claude/skills/${name}/SKILL.md ${STATUS_LABEL[status]}`);
+      if (existsSync(join(skillsDir, `${name}.md`))) legacy.push(`.claude/skills/${name}.md`);
+    }
+
+    // 사용자가 고쳤을 수 있으므로 지우지 않고 알리기만 한다
+    if (legacy.length > 0) {
+      console.log("\n  이전 형식의 스킬 파일이 남아 있다. Claude Code 가 읽지 않으므로 지워도 된다:");
+      for (const path of legacy) console.log(`    ${path}`);
     }
   }
 
