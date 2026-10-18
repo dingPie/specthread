@@ -15,7 +15,7 @@ npm 패키지 `specthread` 소스 레포. SDD(Spec-Driven Development) 검사/�
 
 ```bash
 npm run docs:typecheck   # 타입 검사
-npm run docs:test        # 유닛 테스트 (74건)
+npm run docs:test        # 유닛 테스트 (82건)
 npm run build            # tsc 빌드
 npm run docs:check       # 실 문서 대상 정합성 검사 (scaffold 기반)
 ```
