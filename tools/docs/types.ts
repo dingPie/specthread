@@ -56,7 +56,7 @@ export interface SectionRef {
   /**
    * 앵커 링크 안에 놓인 참조인지.
    *
-   * 다른 문서의 절은 앵커 링크로 가리켜야 한다 (`docs/system/rules.md` §3-5).
+   * 다른 문서의 절은 앵커 링크로 가리켜야 한다 (`specthread/rules.md` §3-5).
    * 링크 없이 `§N` 만 적은 것을 가려내는 데 쓴다.
    */
   linked: boolean;
@@ -112,10 +112,12 @@ export interface IndexedFile {
 
 /** 색인 전체 */
 export interface DocIndex {
+  /** 프로젝트 루트 절대 경로. 색인 경로는 여기 기준 상대 경로다 */
+  root: string;
   files: Map<string, IndexedFile>;
   /** 문서 basename·stem → 경로 목록. § 참조 해소에 쓴다 */
   docsByName: Map<string, string[]>;
-  /** 로드된 설정. 검사기·생성기가 규약 경로 등에 접근할 때 쓴다 */
+  /** 로드된 설정 */
   config: SpecthreadConfig;
 }
 

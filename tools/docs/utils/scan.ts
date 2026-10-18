@@ -4,15 +4,13 @@
  * 검사기와 생성기가 모두 이 색인 하나를 쓴다.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, relative, normalize } from "node:path";
+import { join, relative, sep } from "node:path";
+import { CONVENTION_FILES } from "../constants/paths.ts";
 import { parseIgnoredLines } from "./ignore.ts";
 import { parseMarkdown, parseMarkers } from "./parse.ts";
 import { makeRefContext, parseSectionRefs } from "./resolve.ts";
 import type { DocIndex, FileKind, IndexedFile } from "../types.ts";
 import type { FileKindsConfig, SpecthreadConfig } from "../config.schema.ts";
-
-/** 프로젝트 루트 절대 경로. 색인 경로를 여기 기준 상대 경로로 통일하는 데 쓴다 */
-export const REPO_ROOT = normalize(process.cwd());
 
 /** config.fileKinds 에서 확장자 → kind 역매핑을 만든다 */
 export const buildExtMap = (kinds: FileKindsConfig): Map<string, FileKind> => {
@@ -46,12 +44,13 @@ const walk = (dir: string, out: string[] = []): string[] => {
 };
 
 /**
- * config.path 에서 대상 파일을 모은다.
+ * config.path 에서 대상 파일을 모은다. 규약 파일은 `path` 에 없어도 더한다.
  *
  * 값이 디렉터리면 재귀 스캔, 파일이면 직접 로드. 파싱 전략은 확장자로 결정한다.
- * 인식하지 못하는 확장자는 건너뛴다.
+ * 인식하지 못하는 확장자는 건너뛴다. 색인 경로는 OS 와 관계없이 `/` 로 잇는다.
  */
 const collectTargets = (
+  root: string,
   pathConfig: Record<string, string[]>,
   extMap: Map<string, FileKind>,
 ): { path: string; kind: FileKind }[] => {
@@ -59,7 +58,7 @@ const collectTargets = (
   const seen = new Set<string>();
 
   const add = (abs: string) => {
-    const rel = relative(REPO_ROOT, abs);
+    const rel = relative(root, abs).split(sep).join("/");
     if (seen.has(rel)) return;
     const kind = kindFromPath(rel, extMap);
     if (kind === null) return;
@@ -67,15 +66,14 @@ const collectTargets = (
     out.push({ path: rel, kind });
   };
 
-  for (const paths of Object.values(pathConfig)) {
-    for (const entry of paths) {
-      const abs = join(REPO_ROOT, entry);
-      if (!existsSync(abs)) continue;
-      if (statSync(abs).isDirectory()) {
-        for (const file of walk(abs)) add(file);
-      } else {
-        add(abs);
-      }
+  const entries = [...Object.values(pathConfig).flat(), ...CONVENTION_FILES];
+  for (const entry of entries) {
+    const abs = join(root, entry);
+    if (!existsSync(abs)) continue;
+    if (statSync(abs).isDirectory()) {
+      for (const file of walk(abs)) add(file);
+    } else {
+      add(abs);
     }
   }
 
@@ -88,17 +86,17 @@ const collectTargets = (
  * 참조 해소 문맥을 먼저 만들어야 하므로 문서 목록을 두 번 본다 - 한 번은 이름 색인을
  * 위해, 한 번은 실제 파싱을 위해. 코드와 JSON 은 헤딩이 없어서 빈 값으로 채운다.
  */
-export const buildIndex = (config: SpecthreadConfig): DocIndex => {
+export const buildIndex = (root: string, config: SpecthreadConfig): DocIndex => {
   const extMap = buildExtMap(config.fileKinds);
-  const targets = collectTargets(config.path, extMap);
+  const targets = collectTargets(root, config.path, extMap);
   const mdPaths = targets.filter((t) => t.kind === "doc").map((t) => t.path);
   const ctx = makeRefContext(mdPaths, config.ignoreDocNames);
 
   const files = new Map<string, IndexedFile>();
   for (const { path, kind } of targets) {
-    const lines = readFileSync(join(REPO_ROOT, path), "utf8").split("\n");
+    const lines = readFileSync(join(root, path), "utf8").split("\n");
     const sectionRefs = parseSectionRefs(path, kind, lines, ctx);
-    const ignored = parseIgnoredLines(lines);
+    const ignored = parseIgnoredLines(lines, kind);
     if (kind === "doc") {
       files.set(path, { ...parseMarkdown(path, lines), sectionRefs, ignored });
     } else {
@@ -121,5 +119,5 @@ export const buildIndex = (config: SpecthreadConfig): DocIndex => {
     }
   }
 
-  return { files, docsByName: ctx.nameMap, config };
+  return { root, files, docsByName: ctx.nameMap, config };
 };
