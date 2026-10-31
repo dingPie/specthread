@@ -12,12 +12,12 @@ const DOCS = [
   'CLAUDE.md',
   'client/CLAUDE.md',
 ];
-const ctx = makeRefContext(DOCS, ['spec']);
+const ctx = makeRefContext({ docPaths: DOCS, ignoreDocNames: ['spec'] });
 
 const refs = (from: string, ...lines: string[]) =>
   parseSectionRefs(from, from.endsWith('.md') ? 'doc' : 'source', lines, ctx);
 
-test('펜스 코드블록 안 헤딩·링크를 세지 않는다', () => {
+test('코드블록 안 헤딩·링크를 세지 않는다', () => {
   const parsed = parseMarkdown('docs/x.md', [
     '# 제목',
     '## 1. 실제',
@@ -208,7 +208,7 @@ test('미확정 항목을 종류와 slug 로 읽는다', () => {
 });
 
 test('구 형식 체크박스 항목은 읽지 않는다', () => {
-  // 체크박스는 폐기됐다. 해결되면 지우므로 `[x]` 상태가 존재하지 않는다
+  // 체크박스는 항목 형식이 아니다. 해결되면 지우므로 `[x]` 상태가 존재하지 않는다
   const parsed = parseMarkdown('docs/x.md', [
     '# 제목',
     '## 미확정 사항',
@@ -225,4 +225,19 @@ test('마커를 읽는다', () => {
   assert.deepEqual(parsed.markers, [
     { kind: 'deps', slug: 'pierce-step', line: 2 },
   ]);
+});
+
+test('설정의 문서 확장자로 절 참조 대상을 해소한다', () => {
+  const mdx = makeRefContext({ docPaths: ['docs/guide.mdx', 'docs/auth.md'], docExts: ['.md', '.mdx'] });
+  const out = parseSectionRefs('src/a.ts', 'source', ['// guide.mdx §2', '// guide §2', '// auth.md §2'], mdx);
+  assert.deepEqual(
+    out.map((r) => r.targetFile),
+    ['docs/guide.mdx', 'docs/guide.mdx', 'docs/auth.md'],
+  );
+});
+
+test('문서 확장자 뒤에 글자가 이어지면 그 확장자로 읽지 않는다', () => {
+  const md = makeRefContext({ docPaths: ['docs/auth.md'] });
+  const [r] = parseSectionRefs('src/a.ts', 'source', ['// notes.mdx §2'], md);
+  assert.equal(r.reason, 'no-doc-name');
 });

@@ -15,7 +15,6 @@ import {
 } from "../utils/scope.ts";
 import type { DocIndex, Finding, SectionRef } from "../types.ts";
 
-/** 미해소 사유별 메시지 */
 /**
  * 해소 실패 사유마다 규칙 id 와 메시지.
  *

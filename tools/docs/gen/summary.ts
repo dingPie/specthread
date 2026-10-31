@@ -15,6 +15,7 @@
 import { PENDING_PATH } from '../constants/paths.ts';
 import { ITEM_HEADING, TIMEPOINT } from '../constants/patterns.ts';
 import { slugify } from '../utils/anchor.ts';
+import { eachContentLine } from '../utils/parse.ts';
 import { isWorkDoc } from '../utils/scope.ts';
 import type { DocIndex, IndexedFile } from '../types.ts';
 
@@ -39,13 +40,14 @@ export interface SummaryRow {
  * 절 하나의 범위. 절 헤딩 다음 줄부터 첫 항목 헤딩 앞까지가 표 자리다.
  *
  * 항목이 없는 절은 다음 `##` 앞까지다 - 표를 넣을 자리는 있지만 넣을 것이 없다.
+ * 코드블록 안의 헤딩은 예시라서 절이나 항목으로 보지 않는다.
  */
 type SectionRange = { heading: number; blockStart: number; blockEnd: number; items: number[] };
 
 const sections = (lines: string[]): SectionRange[] => {
   const out: SectionRange[] = [];
   let cur: SectionRange | null = null;
-  lines.forEach((line, i) => {
+  eachContentLine(lines, (line, i) => {
     if (/^##\s+\d/.test(line)) {
       cur = { heading: i + 1, blockStart: i + 2, blockEnd: i + 1, items: [] };
       out.push(cur);

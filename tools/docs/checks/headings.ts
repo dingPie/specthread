@@ -4,8 +4,8 @@ import { RULE } from '../constants/rules.ts';
  * 헤딩 구조 - 제목이 하나인가, 꼬리 절 이름을 본문에서 재사용하지 않는가,
  * 꼬리 절에 번호가 붙지 않았는가, 꼬리 절이 정해진 순서인가.
  *
- * 둘 다 생성기가 자리를 잘못 짚게 만드는 원인이다. 꼬리 절은 이름으로 찾으므로
- * 이름이 겹치면 어느 쪽이 꼬리인지 가릴 수 없고, 번호가 붙으면 규칙 8 과 어긋난다.
+ * 하나라도 어긋나면 생성기가 목차와 꼬리 절을 넣을 위치를 정할 수 없다. 꼬리 절은 이름으로 찾으므로
+ * 이름이 겹치면 어느 쪽이 꼬리 절인지 구분할 수 없고, 번호가 붙으면 규칙 8 과 어긋난다.
  */
 import { isDoc, tailOrderOk, titleHeadings } from "../utils/scope.ts";
 import type { DocIndex, Finding } from "../types.ts";

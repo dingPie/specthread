@@ -89,8 +89,12 @@ const collectTargets = (
 export const buildIndex = (root: string, config: SpecthreadConfig): DocIndex => {
   const extMap = buildExtMap(config.fileKinds);
   const targets = collectTargets(root, config.path, extMap);
-  const mdPaths = targets.filter((t) => t.kind === "doc").map((t) => t.path);
-  const ctx = makeRefContext(mdPaths, config.ignoreDocNames);
+  const docPaths = targets.filter((t) => t.kind === "doc").map((t) => t.path);
+  const ctx = makeRefContext({
+    docPaths,
+    ignoreDocNames: config.ignoreDocNames,
+    docExts: config.fileKinds.doc,
+  });
 
   const files = new Map<string, IndexedFile>();
   for (const { path, kind } of targets) {

@@ -12,6 +12,7 @@ import { ITEM_AS_LI, ITEM_HEADING, timepointGlobal } from '../constants/patterns
 import { RULE } from '../constants/rules.ts';
 import { summaryBlocks } from '../gen/summary.ts';
 import { invertByTarget, pendingSectionBlock } from '../gen/pending-section.ts';
+import { eachContentLine } from '../utils/parse.ts';
 import { underPath } from '../utils/path-match.ts';
 import { inChangeLog, isWorkDoc } from '../utils/scope.ts';
 import type { DocIndex, Finding, IndexedFile } from '../types.ts';
@@ -251,7 +252,8 @@ export const checkPending = (index: DocIndex): Finding[] => {
 
   const findings: Finding[] = [];
 
-  file.lines.forEach((raw, i) => {
+  // 코드블록 안은 항목 형식을 보여주는 예시다
+  eachContentLine(file.lines, (raw, i) => {
     const line = i + 1;
     if (inChangeLog(file, line)) return;
 

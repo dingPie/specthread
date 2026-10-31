@@ -18,7 +18,7 @@ export const slugify = (text: string): string =>
 /**
  * 헤딩 원문에서 앞머리 번호를 떼어낸다. `6-1. 기본 데미지` → `6-1` + `기본 데미지`
  *
- * 중간 자리에 문자가 오는 `1-B-1` 도 받는다 - `CLAUDE.md` §7 이 정한 형태다.
+ * 중간 자리에 문자가 오는 `1-B-1` 도 받는다.
  */
 export const splitHeadingNum = (raw: string): { num: string | null; title: string } => {
   const m = /^(\d+(?:-[0-9A-Za-z]+)*)\.\s+(.*)$/.exec(raw);
