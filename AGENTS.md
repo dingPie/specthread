@@ -20,6 +20,8 @@ npm run build            # tsc 빌드
 npm run docs:check       # scaffold 검증 (새 init 결과와 템플릿)
 ```
 
+개발 스크립트는 `.ts` 를 그대로 실행하므로 Node 22.18 이상 또는 23.6 이상이 필요하다. `engines` 의 Node 18 이상은 배포본(`dist/`) 기준이다.
+
 ## 배포
 
 ```bash
