@@ -169,19 +169,28 @@ const SCHEMA: Record<string, Field> = {
   work: { check: string },
 };
 
-/** 제거한 키. 기존 config 가 깨지지 않게 오류 대신 경고로 알린다 */
-const REMOVED_KEYS: Record<string, string> = {
+/** 제거한 키와 그 이유. 기존 config 가 깨지지 않게 오류 대신 경고로 알린다 */
+export const REMOVED_KEYS: Record<string, string> = {
   locale: "읽는 곳이 없었다",
+  docTypes: "읽는 곳이 없었다",
   rules: `규칙 문서는 specthread/rules.md 고정이다`,
   pending: `관리 문서는 specthread/pending.md 고정이다`,
   project: `프로젝트 문서는 specthread/project.md 고정이다`,
   "features.emDash": "em dash 검사를 제거했다",
 };
 
+/** 설정 파일에 남아 있는 제거된 키 하나 */
+export interface RemovedKey {
+  file: string;
+  /** 점으로 이은 키 경로 */
+  key: string;
+}
+
 interface Validated {
   value: Record<string, unknown>;
   problems: ConfigProblem[];
   warnings: string[];
+  removed: RemovedKey[];
 }
 
 /**
@@ -192,9 +201,10 @@ interface Validated {
 const validateLayer = (raw: unknown, file: string): Validated => {
   const problems: ConfigProblem[] = [];
   const warnings: string[] = [];
+  const removed: RemovedKey[] = [];
 
   if (!isPlainObject(raw)) {
-    return { value: {}, problems: [{ file, key: "", message: "최상위가 객체여야 한다" }], warnings };
+    return { value: {}, problems: [{ file, key: "", message: "최상위가 객체여야 한다" }], warnings, removed };
   }
 
   const walk = (obj: Record<string, unknown>, schema: Record<string, Field>, prefix: string) => {
@@ -202,6 +212,7 @@ const validateLayer = (raw: unknown, file: string): Validated => {
     for (const [key, v] of Object.entries(obj)) {
       const full = prefix === "" ? key : `${prefix}.${key}`;
       if (full in REMOVED_KEYS) {
+        removed.push({ file, key: full });
         warnings.push(`${file}: ${full} 는 제거된 키다. 지워도 된다 - ${REMOVED_KEYS[full]}`);
         continue;
       }
@@ -232,7 +243,7 @@ const validateLayer = (raw: unknown, file: string): Validated => {
     return out;
   };
 
-  return { value: walk(raw, SCHEMA, ""), problems, warnings };
+  return { value: walk(raw, SCHEMA, ""), problems, warnings, removed };
 };
 
 // ---------------------------------------------------------------------------
@@ -277,19 +288,18 @@ const deepMerge = (
 const ruleGroupSet = new Set<string>(ALL_RULE_GROUPS);
 
 /** 모르는 군은 경고만 한다. 그 군의 지적은 어차피 없으므로 걸러도 결과가 같다 */
-const warnSkipCheckGroups = (items: (string | SkipCheckEntry)[]): void => {
-  for (const item of items) {
-    if (typeof item === "string") continue;
-    for (const group of item.only) {
-      if (!ruleGroupSet.has(group)) {
-        console.warn(
-          `[specthread] skipCheck: unknown rule group "${group}" in path "${item.path}". ` +
-          `Valid groups: ${ALL_RULE_GROUPS.join(", ")}`,
-        );
-      }
-    }
-  }
-};
+const skipCheckWarnings = (items: (string | SkipCheckEntry)[]): string[] =>
+  items.flatMap((item) =>
+    typeof item === "string"
+      ? []
+      : item.only
+          .filter((group) => !ruleGroupSet.has(group))
+          .map(
+            (group) =>
+              `skipCheck: unknown rule group "${group}" in path "${item.path}". ` +
+              `Valid groups: ${ALL_RULE_GROUPS.join(", ")}`,
+          ),
+  );
 
 /** 경로 값을 색인 경로와 같은 형태로 맞춘다. 소비처는 정규화된 값만 본다 */
 const normalizePaths = (config: SpecthreadConfig): SpecthreadConfig => ({
@@ -305,29 +315,57 @@ const normalizePaths = (config: SpecthreadConfig): SpecthreadConfig => ({
 // Public API
 // ---------------------------------------------------------------------------
 
+/** 설정을 읽은 결과. 문제가 있어도 쓸 수 있는 값만 병합해 함께 돌려준다 */
+export interface ConfigReport {
+  config: SpecthreadConfig;
+  problems: ConfigProblem[];
+  warnings: string[];
+  removed: RemovedKey[];
+}
+
+/**
+ * 기본값 → config.jsonc → config.local.jsonc 순으로 병합한다. 출력도 예외도 없다.
+ *
+ * 쓸 수 없는 값은 병합에서 빼고 `problems` 에 담는다. 업데이트 프롬프트처럼 설정이 틀려도
+ * 중단하지 않아야 하는 기능이 이 결과를 사용한다.
+ */
+export const readConfig = (root: string = process.cwd()): ConfigReport => {
+  let merged = { ...DEFAULT_CONFIG } as unknown as Record<string, unknown>;
+  const problems: ConfigProblem[] = [];
+  const warnings: string[] = [];
+  const removed: RemovedKey[] = [];
+
+  for (const file of [CONFIG_PATH, LOCAL_CONFIG_PATH]) {
+    const abs = join(root, file);
+    if (!existsSync(abs)) continue;
+    let raw: unknown;
+    try {
+      raw = parseJsonc(readFileSync(abs, "utf-8"), file);
+    } catch (e) {
+      if (!(e instanceof ConfigError)) throw e;
+      problems.push(...e.problems);
+      continue;
+    }
+    const layer = validateLayer(raw, file);
+    problems.push(...layer.problems);
+    warnings.push(...layer.warnings);
+    removed.push(...layer.removed);
+    merged = deepMerge(merged, layer.value);
+  }
+
+  const config = normalizePaths(merged as unknown as SpecthreadConfig);
+  warnings.push(...skipCheckWarnings(config.skipCheck));
+  return { config, problems, warnings, removed };
+};
+
 /**
  * 기본값 → config.jsonc → config.local.jsonc 순으로 병합한 설정.
  *
  * 쓸 수 없는 값이 하나라도 있으면 `ConfigError` 를 던진다. 경고는 출력만 하고 진행한다.
  */
 export const loadConfig = (root: string = process.cwd()): SpecthreadConfig => {
-  let merged = { ...DEFAULT_CONFIG } as unknown as Record<string, unknown>;
-  const problems: ConfigProblem[] = [];
-  const warnings: string[] = [];
-
-  for (const file of [CONFIG_PATH, LOCAL_CONFIG_PATH]) {
-    const abs = join(root, file);
-    if (!existsSync(abs)) continue;
-    const layer = validateLayer(parseJsonc(readFileSync(abs, "utf-8"), file), file);
-    problems.push(...layer.problems);
-    warnings.push(...layer.warnings);
-    merged = deepMerge(merged, layer.value);
-  }
-
+  const { config, problems, warnings } = readConfig(root);
   for (const w of warnings) console.warn(`[specthread] ${w}`);
   if (problems.length > 0) throw new ConfigError(problems);
-
-  const config = normalizePaths(merged as unknown as SpecthreadConfig);
-  warnSkipCheckGroups(config.skipCheck);
   return config;
 };
