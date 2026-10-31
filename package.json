@@ -1,6 +1,6 @@
 {
   "name": "specthread",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "스펙 문서에 현재 상태만 남기고 코드로 검사하는 SDD 도구",
   "type": "module",
   "bin": {
