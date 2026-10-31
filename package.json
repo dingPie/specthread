@@ -1,7 +1,7 @@
 {
   "name": "specthread",
   "version": "0.2.1",
-  "description": "Spec-Driven Development (SDD) template. Docs are the single source of truth; code implements docs.",
+  "description": "스펙 문서에 현재 상태만 남기고 코드로 검사하는 SDD 도구",
   "type": "module",
   "bin": {
     "specthread": "./dist/bin/cli.js"
