@@ -35,7 +35,7 @@ export const checkTimestamps = (index: DocIndex): Finding[] => {
       }
 
       const line = i + 1;
-      // 펜스는 예시, 변경 이력은 날짜가 있어야 하는 곳, 목차·미확정 사항 절은 생성물이다
+      // 코드블록은 예시, 변경 이력은 날짜가 있어야 하는 곳, 목차·미확정 사항 절은 생성물이다
       if (fence || inChangeLog(file, line) || inToc(file, line) || inPendingSection(file, line)) return;
 
       const mask = codeSpanMask(text);

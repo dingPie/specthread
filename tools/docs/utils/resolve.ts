@@ -14,7 +14,7 @@ import {
 } from "./parse.ts";
 import type { FileKind, SectionRef } from "../types.ts";
 
-/** 절 참조. 중간 자리에 문자가 오는 `§1-B-1` 도 받는다 (`CLAUDE.md` §7 형태) */
+/** 절 참조. 중간 자리에 문자가 오는 `§1-B-1` 도 받는다 */
 const SECTION_REF = /§(\d+(?:-[0-9A-Za-z]+)*)/g;
 
 /** 문서 확장자를 뗀 이름. 문서 확장자가 아니면 그대로 둔다 */
@@ -40,9 +40,9 @@ const docFilePattern = (docExts: string[]): RegExp | null => {
 /**
  * 문서 이름 → 경로 색인. basename 과 확장자 없는 stem 양쪽으로 넣는다.
  *
- * 코드 주석이 `data-conventions §2` 처럼 확장자를 빼고 적는 경우가 있어서 stem 도
- * 찾을 수 있어야 한다. 같은 이름의 문서가 여럿이면 (`CLAUDE.md` 가 루트와 client 에)
- * 값이 여러 개 담기고, 그때는 경로가 붙어 있지 않으면 대상을 특정할 수 없다.
+ * 코드 주석은 `conventions §2` 처럼 확장자를 빼고 적기도 하므로 stem 도 찾을 수 있어야
+ * 한다. 같은 이름의 문서가 여럿이면 (루트와 `docs/` 의 `README.md`) 값이 여러 개
+ * 담기고, 그때는 경로가 함께 적혀 있지 않으면 대상을 특정할 수 없다.
  */
 const buildNameMap = (paths: string[], docExts: string[]): Map<string, string[]> => {
   const map = new Map<string, string[]>();
@@ -74,7 +74,7 @@ const resolveDocName = (
   nameMap: Map<string, string[]>,
 ): { path: string | null; reason: SectionRef["reason"] } => {
   // 상대 경로는 참조한 문서 위치를 기준으로 푼다. `../` 를 그냥 벗기면
-  // `../../CLAUDE.md` 가 `CLAUDE.md` 가 되어 루트와 client 중 어느 쪽인지 잃는다.
+  // `../../README.md` 가 `README.md` 가 되어 어느 디렉터리의 문서인지 알 수 없다.
   if (/^\.{1,2}\//.test(raw)) {
     const resolved = normalize(join(dirname(fromFile), raw));
     return docPaths.includes(resolved)
@@ -101,8 +101,8 @@ const resolveDocName = (
 /**
  * `§` 왼쪽에서 참조 대상으로 볼 문서명을 고른다. 없으면 null.
  *
- * **끝 위치가 가장 오른쪽인 후보를 고른다.** 시작 위치로 비교하면 `](../../CLAUDE.md)`
- * 안의 stem `CLAUDE` 가 전체 경로보다 늦게 시작해 이겨버리고, 경로가 주는 판별력을 잃는다.
+ * **끝 위치가 가장 오른쪽인 후보를 고른다.** 시작 위치로 비교하면 `](../../README.md)`
+ * 안의 stem `README` 가 전체 경로보다 늦게 시작해서 선택되고, 경로로 구분할 수 없게 된다.
  *
  * 고른 문서명과 `§` 사이에 한글이 끼면 버린다. 그 문서명은 참조 대상이 아니라 화제다 -
  * 실 참조는 사이에 공백·괄호·백틱·구분자만 온다.
@@ -178,8 +178,8 @@ export const makeRefContext = ({
 /**
  * 한 파일의 절 참조를 모두 뽑아 해소한다.
  *
- * `battle.md §1·§4·§6` 같은 복수 절도 각 `§` 가 자기 왼쪽의 가까운 문서명에 붙으므로
- * 따로 다룰 필요가 없다. 문서명을 못 찾으면 마크다운은 자기 문서 참조로 보고
+ * `auth.md §1·§4·§6` 같은 복수 절도 각 `§` 가 자기 왼쪽에서 가장 가까운 문서명을 대상으로
+ * 하므로 따로 다룰 필요가 없다. 문서명을 못 찾으면 마크다운은 자기 문서 참조로 보고
  * (표 안 `§4-1` 같은 것), 코드는 대상 불명으로 남긴다.
  */
 export const parseSectionRefs = (

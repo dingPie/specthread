@@ -65,7 +65,7 @@ export const applyToc = (file: IndexedFile, lines: string[]): string[] | null =>
     return [...lines.slice(0, start - 1), ...block, ...lines.slice(end)];
   }
 
-  // 제목 줄은 색인에서 꺼낸다. 본문을 다시 훑으면 펜스 안 `# ` 를 제목으로 볼 수 있다
+  // 제목 줄은 색인에서 꺼낸다. 본문을 다시 훑으면 코드블록 안 `# ` 를 제목으로 볼 수 있다
   return [
     ...lines.slice(0, title.line),
     "",

@@ -17,7 +17,7 @@ const ctx = makeRefContext({ docPaths: DOCS, ignoreDocNames: ['spec'] });
 const refs = (from: string, ...lines: string[]) =>
   parseSectionRefs(from, from.endsWith('.md') ? 'doc' : 'source', lines, ctx);
 
-test('펜스 코드블록 안 헤딩·링크를 세지 않는다', () => {
+test('코드블록 안 헤딩·링크를 세지 않는다', () => {
   const parsed = parseMarkdown('docs/x.md', [
     '# 제목',
     '## 1. 실제',
@@ -208,7 +208,7 @@ test('미확정 항목을 종류와 slug 로 읽는다', () => {
 });
 
 test('구 형식 체크박스 항목은 읽지 않는다', () => {
-  // 체크박스는 폐기됐다. 해결되면 지우므로 `[x]` 상태가 존재하지 않는다
+  // 체크박스는 항목 형식이 아니다. 해결되면 지우므로 `[x]` 상태가 존재하지 않는다
   const parsed = parseMarkdown('docs/x.md', [
     '# 제목',
     '## 미확정 사항',

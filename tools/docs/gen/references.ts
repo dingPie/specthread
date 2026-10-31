@@ -32,8 +32,8 @@ const isCode = (path: string, docExts: Set<string>): boolean => {
 /**
  * 링크 대상의 리포 루트 기준 위치. 같은 파일 이름이 겹칠 때 라벨로 쓴다.
  *
- * 앞머리만 떼면 구분이 사라진다 - `client/README.md` 안에서 `../CLAUDE.md` 와
- * `./CLAUDE.md` 는 서로 다른 파일인데 둘 다 `CLAUDE.md` 가 된다.
+ * 앞머리만 떼면 구분이 사라진다 - `docs/guide.md` 안에서 `../README.md` 와
+ * `./README.md` 는 서로 다른 파일인데 둘 다 `README.md` 가 된다.
  */
 const repoPath = (from: string, target: string): string =>
   normalize(join(dirname(from), target));
@@ -80,8 +80,8 @@ const collect = (file: IndexedFile): Target[] => {
 /**
  * 대상별 표시 이름.
  *
- * 기본은 파일 이름이고, 한 문서 안에서 같은 이름이 둘 이상 나오면 리포 안 위치를
- * 알 만큼 앞을 붙인다 - `CLAUDE.md` 는 루트와 client 두 곳에 있다.
+ * 기본은 파일 이름이고, 한 문서 안에서 같은 이름이 둘 이상 나오면 리포 루트 기준
+ * 경로로 표시한다. 루트와 `docs/` 의 `README.md` 처럼 이름이 같은 파일을 구분하기 위해서다.
  */
 const labels = (from: string, targets: Target[]): Map<string, string> => {
   const seen = new Map<string, number>();

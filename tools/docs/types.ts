@@ -7,8 +7,8 @@ import type { SpecthreadConfig } from './config.schema.ts';
  * 앵커가 붙은 링크의 라벨 구간과 그 링크 대상.
  *
  * 라벨 안에 놓인 `§N` 은 라벨 글자가 아니라 **링크 대상 경로** 로 풀어야 한다.
- * `` [`CLAUDE.md` §1](../../CLAUDE.md#1-절대-원칙) `` 에서 라벨만 보면 루트와 client
- * 중 어느 `CLAUDE.md` 인지 알 수 없지만 대상 경로는 알려준다.
+ * `` [`README.md` §1](../README.md#1-개요) `` 에서 라벨만 보면 어느 디렉터리의
+ * `README.md` 인지 알 수 없지만 대상 경로는 알려준다.
  */
 export interface AnchorLabelSpan { start: number; end: number; target: string }
 

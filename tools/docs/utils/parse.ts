@@ -2,8 +2,7 @@
  * 마크다운 한 파일에서 색인 재료를 뽑는다 - 헤딩·링크·마커·미확정 항목과
  * 생성기가 덮어쓸 블록의 위치.
  *
- * 펜스 코드블록 안은 전부 무시한다. 템플릿이 골격을 코드블록으로 담고 있어서
- * 추적하지 않으면 헤딩 88 개와 링크 90 개가 오탐으로 잡힌다.
+ * 코드블록 안은 전부 무시한다. 템플릿과 규칙 문서는 골격과 예시를 코드블록에 담는다.
  */
 import { TAIL, TAIL_NAMES } from "../constants/docs.ts";
 import { MARKER, PENDING_ITEM, PENDING_JSON } from "../constants/patterns.ts";
@@ -28,9 +27,9 @@ import type {
 const TAIL_SET = new Set<string>(TAIL_NAMES);
 
 /**
- * 펜스 코드블록 바깥의 줄만 넘겨준다.
+ * 코드블록 바깥의 줄만 넘겨준다.
  *
- * 펜스 여는 줄과 닫는 줄 자체도 넘기지 않는다. 여닫이를 구분하지 않고 토글만
+ * 코드블록을 여는 줄과 닫는 줄 자체도 넘기지 않는다. 여닫이를 구분하지 않고 토글만
  * 하므로 언어 표기가 붙은 ` ```markdown ` 도 그대로 잡힌다.
  */
 export const eachContentLine = (
@@ -52,8 +51,8 @@ export const eachContentLine = (
  * 인라인 백틱 코드 스팬 위치. 각 문자가 코드 안인지 표시한다.
  *
  * 백틱 안 `§1-A-3` 은 표기법을 인용한 것이지 참조가 아니다. 반대로
- * `` `skill-tree.md §4` `` 처럼 문서명을 함께 담은 것은 실 참조라서, 스팬 안에
- * 문서명이 있는지로 갈라야 한다. 위치만 계산해 두고 판정은 참조 파서가 한다.
+ * `` `auth.md §4` `` 처럼 문서명을 함께 담은 것은 실제 참조라서, 스팬 안에
+ * 문서명이 있는지로 구분해야 한다. 위치만 계산해 두고 판정은 참조 파서가 한다.
  */
 export const codeSpanMask = (line: string): boolean[] => {
   const mask = new Array<boolean>(line.length).fill(false);
@@ -72,7 +71,7 @@ export const codeSpanMask = (line: string): boolean[] => {
 /**
  * 앵커가 붙은 마크다운 링크의 라벨 구간.
  *
- * `[`battle.md` §7](./battle.md#7-승리---패배-조건)` 처럼 라벨 안에 놓인 `§` 는 이미
+ * `[`auth.md` §3](./auth.md#3-인증-흐름)` 처럼 라벨 안에 놓인 `§` 는 이미
  * 앵커로 걸린 참조라 정상이다. 반대로 라벨 밖 `§` 는 링크 없이 적은 것이다.
  * 절 참조 파서가 이 구간으로 둘을 가른다.
  */
@@ -111,7 +110,7 @@ const UNCOMMENTABLE_EXTS = new Set([".json"]);
 /**
  * 마커를 모은다.
  *
- * doc 은 펜스 안을 건너뛰고 (템플릿이 마커 예시를 코드블록에 담는다),
+ * doc 은 코드블록 안을 건너뛰고 (템플릿이 마커 예시를 코드블록에 담는다),
  * source 는 전부 훑는다. JSON 계열 파일은 `"_pending"` 키 패턴을 추가로 잡는다.
  */
 export const parseMarkers = (
