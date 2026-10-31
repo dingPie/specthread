@@ -1,86 +1,166 @@
 # specthread
 
-Spec-Driven Development (SDD) 도구. 문서가 단일 진실 원천이고, 검사/생성 도구가 문서 체계를 유지한다.
+Spec-Driven Development(SDD) 도구입니다. 문서를 단일 정본으로 관리하고, 문서 형식 규칙과 그 규칙을 검사·생성하는 도구를 함께 제공합니다.
+
+AI 와 함께 코드를 작성하면 문서와 코드가 쉽게 어긋납니다. specthread 는 문서 형식을 규칙으로 정하고, 규칙 위반과 생성물의 불일치를 `check` 로 검출합니다. 목차·참조 절처럼 다른 내용에서 만들 수 있는 부분은 `gen` 이 생성합니다.
 
 ## 시작하기
 
 ```bash
-npm install -g specthread
-specthread init
-specthread check
+npm install -D specthread
+npx specthread init
+npx specthread check
 ```
 
-프로젝트 로컬로 쓰려면 `npm install -D specthread` 후 `npx specthread`로 실행한다.
+전역으로 설치하려면 `npm install -g specthread` 후 `specthread` 로 실행합니다.
 
-`init`이 프로젝트에 SDD 체계를 세팅한다:
+## init 이 만드는 파일
 
 ```
-specthread/          ← 문서 규칙·설정·미확정 사항
-  config.jsonc
-  rules.md
-  project.md
-  pending.md
-  templates/         ← 문서 골격 (check 대상 아님)
+specthread/
+  config.jsonc       설정
+  rules.md           문서 형식 규칙
+  project.md         설정값의 맥락과 근거
+  pending.md         미확정 사항 정본
+  templates/         문서 골격 (검사 대상 아님)
     spec.md
     plan.md
-AGENTS.md            ← AI 도구 진입점
-CLAUDE.md            ← Claude Code용 (@AGENTS.md)
-.claude/skills/      ← Claude Code 스킬
+AGENTS.md            AI 도구 진입점
+CLAUDE.md            Claude Code 용 (@AGENTS.md)
+.claude/skills/      Claude Code 스킬
 ```
 
-기존 `AGENTS.md`가 있으면 `<!-- specthread:start/end -->` 마커로 섹션만 삽입한다. 기존 `CLAUDE.md`가 있으면 `@AGENTS.md` 줄만 추가한다.
+기존 `AGENTS.md` 가 있으면 `<!-- specthread:start -->` 와 `<!-- specthread:end -->` 표식 사이에만 specthread 섹션을 넣습니다. 기존 `CLAUDE.md` 에는 `@AGENTS.md` 줄만 추가하고, `.gitignore` 에는 개인 설정 파일 경로를 추가합니다.
 
 | 종류 | 파일 | `init` | `init --force` |
 | ---- | ---- | ------ | -------------- |
 | 패키지 파일 | `rules.md`, `templates/`, `.claude/skills/` | 없을 때만 생성 | 새 버전으로 덮어씀 |
-| 사용자 파일 | `config.jsonc`, `project.md`, `pending.md` | 없을 때만 생성 | 없을 때만 생성 |
-| 병합 | `AGENTS.md` (마커 사이), `CLAUDE.md`, `.gitignore` | 병합 | 병합 |
+| 사용자 파일 | `config.jsonc`, `project.md`, `pending.md` | 없을 때만 생성 | 유지 |
+| 병합 | `AGENTS.md`(표식 사이), `CLAUDE.md`, `.gitignore` | 병합 | 병합 |
 
-설정을 처음 상태로 되돌리려면 `config.jsonc`를 지우고 `init`을 다시 실행한다.
+설정을 처음 상태로 되돌리려면 `config.jsonc` 를 지우고 `init` 을 다시 실행합니다.
 
 ## 명령어
 
 ```bash
 npx specthread init [--tools claude,cursor]   # 프로젝트 초기화
-npx specthread init --force                   # 패키지 파일을 새 버전으로 갱신 (사용자 파일은 유지)
+npx specthread init --force                   # 패키지 파일 갱신, 업데이트 프롬프트 출력
 npx specthread check                          # 문서 정합성 검사
-npx specthread gen                            # 참조 절·목차·요약 표 미리보기
-npx specthread gen --write                    # 실제 적용
+npx specthread gen                            # 생성 결과 미리보기
+npx specthread gen --write                    # 생성 결과 적용
 ```
 
 ### check
 
-30개 규칙으로 문서 형식을 검사한다. 목차, 헤딩, 링크, 참조 절, 변경 이력, 미확정 마커 등.
+30개 규칙으로 문서 형식을 검사합니다. 하위 디렉터리에서 실행해도 `specthread/config.jsonc` 가 있는 디렉터리를 루트로 삼아 같은 범위를 검사합니다.
+
+| 종료 코드 | 의미 |
+| --------- | ---- |
+| 0 | 지적 없음 |
+| 1 | 지적 있음 |
+| 2 | 실행 실패 (설정 파일 없음, 설정 오류, 모르는 명령) |
 
 ### gen
 
-본문 링크와 헤딩을 기반으로 목차·참조 절·미확정 사항 요약을 생성한다. `--write` 없이 실행하면 변경 대상만 보여준다.
+본문 링크, 헤딩, `pending.md` 항목에서 아래 내용을 생성합니다. `--write` 없이 실행하면 바뀔 파일 목록만 출력합니다.
+
+| 생성 대상 | 내용 | 조건 |
+| --------- | ---- | ---- |
+| 목차 | 제목 아래 `##` 헤딩 목록 | 항상 |
+| 참조 절 | 본문 링크를 대상별로 모은 `## 참조` | `features.references` |
+| 미확정 사항 절 | `pending.md` 항목 중 그 문서를 참조하는 것 | `features.markers`, 절이 이미 있는 문서만 |
+| 요약 표 | `pending.md` 각 절 첫 부분의 항목 표 | `features.markers` |
+
+꼬리 절(참조 → 미확정 사항 → 변경 이력) 순서가 어긋난 문서는 생성하지 않고 건너뜁니다.
+
+### init --force
+
+`rules.md`, 템플릿, 스킬을 새 버전으로 바꾸고, 남은 정리를 AI 에게 맡길 업데이트 프롬프트를 출력합니다. 프롬프트에는 실행할 때 감지한 항목만 포함됩니다.
+
+| 감지 항목 | 프롬프트 단계 |
+| --------- | ------------- |
+| 내용이 바뀐 패키지 파일 | git diff 로 사용자 수정분 확인 |
+| 표식 없는 이전 형식 `AGENTS.md` | 표식으로 감싼 뒤 `init` 재실행 |
+| 끝 표식이 없는 `AGENTS.md` | 끝 표식 추가 후 `init` 재실행 |
+| 이전 경로의 스킬 파일 (`.claude/skills/<이름>.md`) | 새 스킬과 비교 후 삭제 |
+| 설정 파일의 제거된 키 (주석 포함) | 키 삭제 |
+| 사용자 파일의 옛 문구 | 현재 문구로 교체 |
+| `path` 에서 빠진 기본 경로 | 의도 확인 |
+
+검사(`check`)와 생성(`gen --write`) 단계는 항상 포함됩니다. Claude Code 에서 `! npx specthread init --force` 로 실행하면 출력이 대화에 바로 포함됩니다.
+
+## 검사 규칙
+
+규칙 ID 는 `<군>/<검사>` 형식입니다. 규칙 본문은 `specthread/rules.md` 에 있고, 각 절에 해당 규칙 ID 가 적혀 있습니다.
+
+| 군 | 수 | 검사 내용 |
+| -- | -- | --------- |
+| `heading` | 4 | 제목 1개, 꼬리 절 이름·번호·순서 |
+| `toc` | 2 | 목차 누락, 헤딩과 불일치 |
+| `link` | 2 | 링크 대상 파일, 앵커 |
+| `section-ref` | 5 | `§N` 대상 절 존재, 앵커 링크 사용, 문서명 해소 |
+| `reference` | 2 | 참조 절 누락, 본문 링크와 불일치 |
+| `changelog` | 1 | 변경 이력 날짜 순서 |
+| `timestamp` | 1 | 본문의 날짜 |
+| `marker` | 3 | 마커와 `pending.md` 항목 대조, 종류 등록 여부 |
+| `pending` | 9 | 항목 형식, 시점 표기, 요약 표·미확정 사항 절 최신 여부 |
+| `style` | 1 | 코드의 규칙 ID 가 `rules.md` 에 선언됐는지 |
+
+검사를 끄는 방법:
+
+- 기능 단위: `features.markers`, `features.references`
+- 경로 단위: `skipCheck`
+- 줄 단위: 같은 줄이나 바로 윗줄의 주석에 `@specthread-ignore`
 
 ## 설정
 
-`specthread/config.jsonc`로 프로젝트별 동작을 제어한다. 개인 오버라이드는 `specthread/config.local.jsonc` (gitignore 대상).
+`specthread/config.jsonc` 로 프로젝트별 동작을 정합니다. 개인 설정은 `specthread/config.local.jsonc` 에 두고, 이 파일은 `init` 이 `.gitignore` 에 추가합니다.
 
 ```
-Core defaults (도구 내부 기본값)
-  ↓ deep merge
-specthread/config.jsonc (프로젝트 공유)
-  ↓ deep merge
-specthread/config.local.jsonc (개인)
+도구 기본값 → specthread/config.jsonc → specthread/config.local.jsonc
 ```
 
-배열과 `path` 는 통째로 교체되고, 나머지 객체는 키 단위로 합쳐진다. 잘못된 값이 있으면 파일과 키를 출력하고 종료 코드 2 로 끝난다. init이 생성하는 `config.jsonc`에 모든 옵션이 주석으로 설명되어 있고, `fileKinds`는 기본 확장자 목록이 실제 값으로 기록되므로 필요한 확장자를 그 자리에서 더하거나 뺄 수 있다.
+- 배열과 `path`: 통째로 교체
+- 그 밖의 객체: 키 단위 병합
+- 잘못된 값: 파일과 키를 출력하고 종료 코드 2
+- 제거된 키, 모르는 키: 경고만 출력
 
-| 키          | 역할                                       |
-| ----------- | ------------------------------------------ |
-| `path`      | 스캔 대상 경로 (자유 KV)                   |
-| `fileKinds` | 확장자 → 종류 매핑 (`doc` / `source`)      |
-| `features`  | 기능 플래그 (`markers`, `references`)      |
-| `markers`   | 마커 종류·시점 라벨                        |
-| `skipCheck` | 검사·생성을 건너뛸 경로                    |
-| `skipRefs`  | 참조 절 생성을 건너뛸 경로                 |
-| `work`      | 작업 문서 폴더 (기본 `docs/work/`)         |
+| 키 | 역할 | 기본값 |
+| -- | ---- | ------ |
+| `path` | 스캔 대상 경로 (키는 자유 라벨) | `docs/`, `specthread/` |
+| `fileKinds` | 확장자별 파일 종류 (`doc` / `source`) | `doc` 은 `.md`, `source` 는 코드·데이터 확장자 |
+| `features` | 기능 켜기·끄기 (`markers`, `references`) | 모두 `true` |
+| `markers` | 마커 종류(`types`), 해결 예정 라벨(`timepoints`) | `["system"]`, `[]` |
+| `ignoreDocNames` | 절 참조 해소에서 제외할 문서 이름 | `[]` |
+| `skipCheck` | 검사·생성을 건너뛸 경로 | `[]` |
+| `skipRefs` | 참조 절을 만들지 않을 경로 | `[]` |
+| `work` | 작업 문서 폴더 | `docs/work/` |
 
-`specthread/` 아래 규칙·미확정·프로젝트 문서의 위치는 고정이다. 템플릿과 설정 파일은 항상 검사에서 제외된다.
+`init` 이 만드는 `config.jsonc` 에 모든 옵션의 설명이 주석으로 적혀 있습니다. `fileKinds.doc` 에 확장자(예: `.mdx`)를 추가하면 그 파일도 문서로 검사하고 절 참조 대상으로 해소합니다.
+
+`specthread/` 아래 규칙·미확정 사항·프로젝트 문서의 경로는 고정입니다. 템플릿과 설정 파일은 항상 검사에서 제외됩니다.
+
+## 문서 체계
+
+`specthread/rules.md` 가 문서 형식 규칙의 정본입니다. 주요 규칙은 아래와 같습니다.
+
+- 제목 바로 아래 목차
+- 본문 절은 `§N-M` 번호 체계, 다른 문서의 절은 앵커 링크로 참조
+- 문서 끝 꼬리 절은 참조 → 미확정 사항 → 변경 이력 순서
+- 날짜·버전 정보는 본문이 아닌 변경 이력에 기록
+- 빈 섹션은 `해당 없음 - <이유>`
+
+### 미확정 사항
+
+작업 중 정하지 못한 것은 작업을 멈추지 않고 마커로 표시합니다. 같은 ID 를 세 곳에서 관리하고, 정본은 `pending.md` 하나입니다.
+
+| 위치 | 표기 | 작성 |
+| ---- | ---- | ---- |
+| 코드·문서의 발생 지점 | `PENDING::<종류>::<slug>` | 사람 |
+| `specthread/pending.md` | `` ### `[<종류>::<slug>]` 제목 `` | 사람 |
+| 각 문서의 `## 미확정 사항` | 그 문서를 참조하는 항목 목록 | `gen` |
+
+JSON 처럼 주석을 쓸 수 없는 파일에서는 `"_pending": "<종류>::<slug>"` 필드로 표기합니다. `check` 는 마커와 항목을 양방향으로 대조해서, 항목 없는 마커(`marker/orphan`)와 마커 없는 항목(`marker/unmarked`)을 지적합니다.
 
 ## SDD 작업 흐름
 
@@ -88,130 +168,80 @@ specthread/config.local.jsonc (개인)
 스펙 확인 → 현황 점검(check) → 계획 수립 → 구현 → 검증(check) → 문서 갱신
 ```
 
-구현 전에 spec을 읽고, 구현 후에 spec을 갱신한다. 진행 중 모호함을 발견하면 `PENDING` 마커를 남기고 작업을 계속한다.
+구현 전에 spec 을 읽고, 구현 후에 spec 을 갱신합니다. 작업 계획은 `docs/work/` 에 plan 문서로 작성하고, 작업이 끝나면 내용을 spec 에 반영한 뒤 plan 문서를 삭제합니다.
 
-### 예시: 기존 인증 spec에 소셜 로그인 추가
+### 예시: 기존 인증 spec 에 소셜 로그인 추가
 
-`docs/spec/auth.md`가 이미 있는 프로젝트에서 소셜 로그인을 추가한다:
+`docs/spec/auth.md` 가 있는 프로젝트에서 소셜 로그인을 추가하는 경우입니다.
 
 ```
 You: 소셜 로그인 기능 계획 세워줘
-AI:  docs/spec/auth.md 를 읽고, plan 템플릿 기반으로
-     docs/work/social-login.md 생성.
-     목표, 작업 단계, 영향 파일을 함께 채운다.
+AI:  docs/spec/auth.md 확인 후 plan 템플릿으로 docs/work/social-login.md 작성.
+     목표, 작업 단계, 영향 파일 포함.
      문서 정합성 검사 통과.
 ```
 
 ```
 You: 진행해줘
 AI:  작업 단계 1 "OAuth 프로바이더 연동" 구현.
-     세션 관리 방식이 미확정이라
-     PENDING::design::oauth-session 마커를 남긴다.
+     세션 관리 방식이 미정이라 PENDING::design::oauth-session 마커 추가.
      단계 상태를 "완료"로 갱신.
 ```
 
 ```
 You: 전부 끝났어, 정리해줘
-AI:  종료 게이트 점검 후,
-     작업 내용을 docs/spec/auth.md §3 에 흡수.
+AI:  종료 게이트 점검 후 작업 내용을 docs/spec/auth.md §3 에 반영.
      docs/work/social-login.md 삭제.
      문서 정합성 검사 통과.
 ```
 
-결과: `docs/spec/auth.md`에 소셜 로그인 절이 추가되고, work 문서는 사라진다. spec이 항상 현재 시스템의 정본으로 남는다.
-
-AI는 작업 중에 `check`와 `gen`을 자동으로 호출한다. `AGENTS.md`가 이 워크플로우를 AI에게 전달하고, `check`가 문서와 코드의 어긋남을 잡는다.
+작업이 끝나면 `docs/spec/auth.md` 에 소셜 로그인 절이 추가되고 plan 문서는 삭제됩니다. spec 은 항상 현재 시스템을 설명하는 정본으로 유지됩니다.
 
 ## AI 도구 지원
 
-`AGENTS.md`가 본체. 대부분의 AI 코딩 도구가 이 파일을 읽는다.
+`AGENTS.md` 가 AI 도구의 진입점입니다. 대부분의 AI 코딩 도구가 이 파일을 읽습니다.
 
-| 도구                              | 동작                                   |
-| --------------------------------- | -------------------------------------- |
-| Claude Code                       | `CLAUDE.md`의 `@AGENTS.md`가 자동 확장 |
-| Cursor / Copilot / Codex / Gemini | `AGENTS.md`를 네이티브로 읽음          |
+| 도구 | 동작 |
+| ---- | ---- |
+| Claude Code | `CLAUDE.md` 의 `@AGENTS.md` 로 읽음 |
+| Cursor / Copilot / Codex / Gemini | `AGENTS.md` 를 직접 읽음 |
 
-`--tools claude` (기본값)로 init하면 Claude Code 스킬이 함께 설치된다:
+`--tools claude`(기본값)로 init 하면 Claude Code 스킬이 함께 설치됩니다.
 
-| 스킬          | 역할                          |
-| ------------- | ----------------------------- |
-| `/check`      | 문서 검사 실행 + 결과 해석    |
-| `/gen`        | 참조 절·목차 생성 + 적용 안내 |
-| `/plan-open`  | 작업 계획 문서 작성·검수·확정 |
-| `/plan-run`   | 계획에 따라 실행·기록         |
-| `/plan-close` | 완료된 작업을 spec에 흡수     |
+| 스킬 | 역할 |
+| ---- | ---- |
+| `/check` | 문서 검사 실행, 결과 해석 |
+| `/gen` | 생성 결과 미리보기, 승인 후 적용 |
+| `/plan-open` | 작업 계획 문서 작성·검수·확정 |
+| `/plan-run` | 계획에 따른 실행과 기록 |
+| `/plan-close` | 완료된 작업을 spec 에 반영, plan 문서 삭제 |
 
-스킬 없이 자연어로 같은 작업을 요청해도 된다. `AGENTS.md`가 AI에게 워크플로우를 알려주기 때문이다. 스킬은 자주 쓰는 흐름의 단축키다.
+스킬 없이 자연어로 요청해도 됩니다. `AGENTS.md` 에 작업 흐름이 적혀 있어서 AI 가 같은 순서로 진행합니다.
 
-## 0.1.x 에서 올리기
-
-0.2.0 은 설정 키 일부를 정리하고 규칙 3개를 더했다. 패키지를 올린 뒤 아래를 실행한다.
+## 버전 올리기
 
 ```bash
 npm install -D specthread@latest
 npx specthread init --force
 ```
 
-`init --force` 는 `rules.md`·템플릿·스킬만 새 버전으로 바꾼다. 사용자 파일과, 0.1.x 가 마커 없이 만든 `AGENTS.md` 는 건드리지 않는다. 남은 정리는 AI 에게 아래 프롬프트로 맡긴다.
+출력된 업데이트 프롬프트를 AI 에게 전달하면 AI 가 남은 정리를 진행합니다. `init --force` 는 패키지 파일만 바꾸고 사용자 파일은 그대로 둡니다. `rules.md` 나 템플릿을 직접 고쳐 썼다면, 실행 전에 커밋해 두어야 바뀐 내용을 diff 로 확인할 수 있습니다.
 
-```
-specthread 를 0.2.0 으로 올렸다. 아래를 순서대로 처리해줘.
-내가 직접 쓴 내용은 지우지 말고, 판단이 필요하면 멈추고 물어봐.
-
-0. specthread/rules.md 와 specthread/templates/ 를 고쳐 쓴 적이 있으면,
-   다음 단계에서 덮어써지므로 먼저 커밋되어 있는지 확인한다.
-
-1. AGENTS.md
-   - `<!-- specthread:start -->` 표식이 없으면, specthread 가 만든 부분
-     (`# specthread` 제목부터 그 섹션 끝까지)을 `<!-- specthread:start -->` 와
-     `<!-- specthread:end -->` 로 감싼다. 그 밖의 내용은 그대로 둔다.
-   - specthread 섹션이 두 번 들어가 있으면 뒤의 것을 지운다.
-
-2. `npx specthread init --force` 를 실행한다.
-   rules.md, 템플릿, 스킬, AGENTS.md 의 specthread 섹션이 새 버전으로 바뀐다.
-
-3. specthread/config.jsonc
-   - `"emDash"` 키와 그 주석을 지운다.
-   - 주석으로만 남은 `locale`, `rules`, `pending`, `project` 블록을 지운다.
-   - `rules`·`pending`·`project` 에 실제 값을 적어 쓰고 있었다면 지우지 말고 알려줘.
-     이제 경로가 specthread/ 아래로 고정이라 파일을 옮겨야 한다.
-   - `path` 에 일부 키만 적어 두었다면 알려줘. 이제 path 는 기본값과 합치지 않고
-     통째로 교체되므로, docs/ 와 specthread/ 스캔이 빠질 수 있다.
-
-4. specthread/project.md 의 "`config.jsonc` 에서 경로를 override 할 수 있다" 를
-   "경로는 `specthread/pending.md` 고정이다" 로 바꾼다.
-
-5. specthread/pending.md 의 "종류마다 `##` 섹션이 하나씩 생긴다. 종류 값은
-   `config.markers.types` 가 정의하며" 를 "종류마다 `##` 섹션을 하나씩 둔다.
-   섹션은 사람이 만들고, 종류 값은 `config.markers.types` 에 있어야 한다." 로 바꾼다.
-
-6. `.claude/skills/` 바로 아래에 check.md, gen.md, plan-open.md, plan-run.md,
-   plan-close.md 가 남아 있으면 같은 이름의 `<이름>/SKILL.md` 와 비교한다.
-   내가 고친 부분이 없으면 지우고, 있으면 알려줘.
-
-7. `npx specthread check` 를 실행한다.
-   - `marker/unknown-type` 이 나오면 쓰고 있는 종류를 `config.markers.types` 에
-     추가할지 물어봐.
-   - `heading/tail-order` 가 나오면 꼬리 절을 참조 → 미확정 사항 → 변경 이력 순서로 옮긴다.
-
-8. `npx specthread gen --write` 후 `npx specthread check` 가 0 건인지 확인한다.
-```
-
-바뀐 동작:
+### 0.2.0 에서 바뀐 동작
 
 | 변경 | 영향 |
 | ---- | ---- |
-| `locale`, `rules`, `pending`, `project`, `features.emDash` 키 제거 | 남아 있으면 경고만 내고 동작한다 |
-| `path` 통째 교체 | 일부 키만 적었다면 기본 `docs/`, `specthread/` 스캔이 빠진다 |
-| 종료 코드 2 | 설정 파일이 없거나 설정을 읽지 못하면, 또는 모르는 명령이면 2 로 끝난다 |
+| `locale`, `rules`, `pending`, `project`, `features.emDash` 키 제거 | 남아 있으면 경고만 출력 |
+| `path` 통째 교체 | 일부 키만 적으면 기본 `docs/`, `specthread/` 스캔이 빠짐 |
+| 종료 코드 2 | 설정 파일이 없거나 읽지 못할 때, 모르는 명령일 때 |
 | 규칙 추가 | `heading/tail-order`, `marker/unknown-type`, `pending/unknown-timepoint` |
-| em dash 검사 제거 | `style/em-dash` 가 없어졌다 |
-| 스킬 경로 | `.claude/skills/<이름>/SKILL.md` 로 바뀌었다. 옛 파일은 지우지 않고 알린다 |
+| em dash 검사 제거 | `style/em-dash` 없음 |
+| 스킬 경로 | `.claude/skills/<이름>/SKILL.md`. 옛 파일은 지우지 않고 안내 |
 
 ## 요구 사항
 
-- Node.js >= 18.0.0
-- 외부 의존성 없음 (zero-dependency)
+- Node.js 18 이상
+- 외부 의존성 없음
 
 ## 라이선스
 
