@@ -5,7 +5,8 @@
  * 확장자를 뺀 것, 마크다운 링크를 동반한 것. 어느 쪽이든 같은 한 규칙으로 다룬다 -
  * **같은 줄에서 왼쪽으로 가장 가까운 문서명** 을 대상으로 삼는다.
  */
-import { basename, dirname, join, normalize } from "node:path";
+import { basename, dirname, extname, join, normalize } from "node:path";
+import { DEFAULT_FILE_KINDS } from "../config.schema.ts";
 import {
   anchorLinkLabelSpans,
   codeSpanMask,
@@ -16,6 +17,25 @@ import type { FileKind, SectionRef } from "../types.ts";
 /** 절 참조. 중간 자리에 문자가 오는 `§1-B-1` 도 받는다 (`CLAUDE.md` §7 형태) */
 const SECTION_REF = /§(\d+(?:-[0-9A-Za-z]+)*)/g;
 
+/** 문서 확장자를 뗀 이름. 문서 확장자가 아니면 그대로 둔다 */
+const stemOf = (base: string, docExts: string[]): string => {
+  const ext = extname(base).toLowerCase();
+  return docExts.includes(ext) ? base.slice(0, -ext.length) : base;
+};
+
+/**
+ * 문서 확장자로 끝나는 파일 이름 패턴. 문서 확장자가 없으면 null.
+ *
+ * 긴 확장자를 먼저 시도하고 뒤에 글자가 이어지지 않는지 본다. `.md` 만 문서일 때
+ * `guide.mdx` 의 앞부분을 `guide.md` 로 읽지 않기 위해서다.
+ */
+const docFilePattern = (docExts: string[]): RegExp | null => {
+  if (docExts.length === 0) return null;
+  const alts = [...docExts]
+    .sort((a, b) => b.length - a.length)
+    .map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return new RegExp(`([A-Za-z0-9_./-]+\\.(?:${alts.join("|")}))(?![A-Za-z0-9])`, "gi");
+};
 
 /**
  * 문서 이름 → 경로 색인. basename 과 확장자 없는 stem 양쪽으로 넣는다.
@@ -24,7 +44,7 @@ const SECTION_REF = /§(\d+(?:-[0-9A-Za-z]+)*)/g;
  * 찾을 수 있어야 한다. 같은 이름의 문서가 여럿이면 (`CLAUDE.md` 가 루트와 client 에)
  * 값이 여러 개 담기고, 그때는 경로가 붙어 있지 않으면 대상을 특정할 수 없다.
  */
-const buildNameMap = (paths: string[]): Map<string, string[]> => {
+const buildNameMap = (paths: string[], docExts: string[]): Map<string, string[]> => {
   const map = new Map<string, string[]>();
   const push = (key: string, path: string) => {
     const list = map.get(key) ?? [];
@@ -34,7 +54,8 @@ const buildNameMap = (paths: string[]): Map<string, string[]> => {
   for (const p of paths) {
     const base = basename(p);
     push(base, p);
-    push(base.replace(/\.md$/, ""), p);
+    const stem = stemOf(base, docExts);
+    if (stem !== base) push(stem, p);
   }
   return map;
 };
@@ -49,20 +70,20 @@ const buildNameMap = (paths: string[]): Map<string, string[]> => {
 const resolveDocName = (
   raw: string,
   fromFile: string,
-  mdPaths: string[],
+  docPaths: string[],
   nameMap: Map<string, string[]>,
 ): { path: string | null; reason: SectionRef["reason"] } => {
   // 상대 경로는 참조한 문서 위치를 기준으로 푼다. `../` 를 그냥 벗기면
   // `../../CLAUDE.md` 가 `CLAUDE.md` 가 되어 루트와 client 중 어느 쪽인지 잃는다.
   if (/^\.{1,2}\//.test(raw)) {
     const resolved = normalize(join(dirname(fromFile), raw));
-    return mdPaths.includes(resolved)
+    return docPaths.includes(resolved)
       ? { path: resolved, reason: "resolved" }
       : { path: null, reason: "unknown-doc" };
   }
   // `spec/player.md` 처럼 경로 조각이 붙은 형태는 접미 일치로 찾는다
   if (raw.includes("/")) {
-    const hits = mdPaths.filter((p) => p === raw || p.endsWith("/" + raw));
+    const hits = docPaths.filter((p) => p === raw || p.endsWith("/" + raw));
     if (hits.length === 1) return { path: hits[0], reason: "resolved" };
     return {
       path: null,
@@ -86,9 +107,12 @@ const resolveDocName = (
  * 고른 문서명과 `§` 사이에 한글이 끼면 버린다. 그 문서명은 참조 대상이 아니라 화제다 -
  * 실 참조는 사이에 공백·괄호·백틱·구분자만 온다.
  */
-const nearestDocName = (left: string, knownStems: Set<string>): string | null => {
+const nearestDocName = (
+  left: string,
+  { docFile, knownStems }: Pick<RefContext, "docFile" | "knownStems">,
+): string | null => {
   const candidates: { text: string; end: number }[] = [];
-  for (const named of left.matchAll(/([A-Za-z0-9_./-]+\.md)/g)) {
+  for (const named of docFile === null ? [] : left.matchAll(docFile)) {
     candidates.push({ text: named[1], end: named.index + named[1].length });
   }
   for (const word of left.matchAll(/([A-Za-z][A-Za-z0-9-]*)/g)) {
@@ -114,9 +138,20 @@ const asRelativePath = (target: string): string =>
 
 /** 참조 해소에 필요한 문맥. 색인 대상 문서 목록에서 한 번 만들어 돌려 쓴다 */
 export interface RefContext {
-  mdPaths: string[];
+  docPaths: string[];
   nameMap: Map<string, string[]>;
   knownStems: Set<string>;
+  /** 문서 확장자로 끝나는 파일 이름 패턴. 문서 확장자가 없으면 null */
+  docFile: RegExp | null;
+}
+
+export interface RefContextInput {
+  /** 색인 대상 문서의 리포 상대 경로 */
+  docPaths: string[];
+  /** 문서명 해소에서 제외할 이름. `config.ignoreDocNames` */
+  ignoreDocNames?: string[];
+  /** 문서 확장자. `config.fileKinds.doc` */
+  docExts?: string[];
 }
 
 /**
@@ -124,17 +159,19 @@ export interface RefContext {
  *
  * stem 은 두 글자 이하를 뺀다 - 짧은 낱말은 산문에서 우연히 겹칠 확률이 높다.
  */
-export const makeRefContext = (mdPaths: string[], ignoreDocNames: string[] = []): RefContext => {
-  const nameMap = buildNameMap(mdPaths);
+export const makeRefContext = ({
+  docPaths,
+  ignoreDocNames = [],
+  docExts = DEFAULT_FILE_KINDS.doc,
+}: RefContextInput): RefContext => {
+  const exts = docExts.map((e) => e.toLowerCase());
   const deny = new Set(ignoreDocNames);
+  const stems = docPaths.map((p) => stemOf(basename(p), exts));
   return {
-    mdPaths,
-    nameMap,
-    knownStems: new Set(
-      [...nameMap.keys()].filter(
-        (k) => !k.endsWith(".md") && k.length > 2 && !deny.has(k),
-      ),
-    ),
+    docPaths,
+    nameMap: buildNameMap(docPaths, exts),
+    knownStems: new Set(stems.filter((k) => k.length > 2 && !deny.has(k))),
+    docFile: docFilePattern(exts),
   };
 };
 
@@ -149,7 +186,7 @@ export const parseSectionRefs = (
   path: string,
   kind: FileKind,
   lines: string[],
-  { mdPaths, nameMap, knownStems }: RefContext,
+  { docPaths, nameMap, knownStems, docFile }: RefContext,
 ): SectionRef[] => {
   const out: SectionRef[] = [];
   const scan = (line: string, i: number) => {
@@ -173,7 +210,7 @@ export const parseSectionRefs = (
 
       const docName =
         span === undefined
-          ? nearestDocName(line.slice(0, m.index), knownStems)
+          ? nearestDocName(line.slice(0, m.index), { docFile, knownStems })
           : asRelativePath(span.target);
 
       // 백틱 안에 문서명 없이 들어앉은 `§N` 은 표기법 인용이라 참조가 아니다
@@ -195,7 +232,7 @@ export const parseSectionRefs = (
       const { path: target, reason } = resolveDocName(
         docName,
         path,
-        mdPaths,
+        docPaths,
         nameMap,
       );
       out.push({
