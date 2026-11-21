@@ -12,17 +12,18 @@
 
 Spec-Driven Development (SDD) 템플릿. 문서가 단일 진실 원천이고 코드는 문서를 구현한다. 설정(`config.jsonc`)과 도구(`check`/`gen`)로 문서 체계를 지원한다.
 
-- **spec 이 정본이다.** 코드와 충돌하면 spec 우선. 코드 변경이 시스템 동작을 바꾸면 spec 동시 갱신 의무.
+- **spec 이 정본이다.** 확정된 결정은 spec 에 기록한다. 코드와 spec 이 다르면 임의로 한쪽에 맞추지 않고 사용자에게 확인한다. 추천 기본값은 spec 이다. 진행 중인 plan(`docs/work/`)이 다루는 범위의 차이는 충돌로 보지 않는다.
+- **spec 갱신 시점.** 코드 변경이 시스템 동작을 바꾸면 spec 을 갱신한다. plan 이 있는 작업은 plan-close 에서, 없으면 같은 커밋에서 갱신한다.
 - **설정**: `config.jsonc` (프로젝트 공유) + `config.local.jsonc` (개인, gitignore 대상).
-- **도구**: `npx specthread check` 는 규칙 위반을 검사하고, `npx specthread gen` 은 참조 절·미확정 사항 뷰를 생성한다.
+- **도구**: `npx specthread check` 는 규칙 위반과 해결 방법을 출력하고, `npx specthread gen` 은 참조 절·미확정 사항 뷰를 생성한다.
 
 ## 2. SDD 작업 흐름
 
 ```
-1. 스펙 확인 → 2. 현황 점검(check) → 3. 계획 수립 → 4. 구현 → 5. 검증(check) → 6. 문서 갱신
+1. 스펙 확인 → 2. 현황 점검(check) → 3. 계획 수립 → 4. 구현 → 5. 검증(check) → 6. spec 반영
 ```
 
-- 구현 전에 spec 을 읽고, 구현 후에 spec 을 갱신한다.
+- 구현 전에 spec 을 읽는다. spec 반영 시점은 개요의 "spec 갱신 시점"을 따른다.
 - 진행 중 모호함을 발견하면 `PENDING` 마커를 남기고 작업을 계속한다 (§4).
 
 ## 3. 문서 체계
