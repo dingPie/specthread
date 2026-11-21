@@ -151,7 +151,7 @@ const ensureGitignore = (cwd: string): void => {
 
 const SKILLS = ["plan-open", "plan-run", "plan-close"];
 
-/** 패키지에서 뺀 스킬. 해결 방법은 check 출력이 함께 알려 준다 */
+/** 패키지에서 제거한 스킬. 해결 방법은 check 출력에 있다 */
 const REMOVED_SKILLS = ["check", "gen"];
 
 /** 업데이트 프롬프트 구분선. 사용자가 이 사이를 복사해 AI 에 전달한다 */
@@ -242,7 +242,7 @@ export const init = (args: string[]): void => {
       for (const path of oldSkills) console.log(`    ${path}`);
     }
     if (removedSkills.length > 0) {
-      console.log("\n  패키지에서 뺀 스킬이 남아 있다. check 출력이 해결 방법을 함께 알려 주므로 지워도 된다:");
+      console.log("\n  패키지에서 제거된 스킬 파일이 남아 있다. check 가 해결 방법을 출력하므로 지워도 된다:");
       for (const path of removedSkills) console.log(`    ${path}`);
     }
   }

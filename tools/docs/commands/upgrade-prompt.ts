@@ -3,6 +3,9 @@
  *
  * 사용자가 AI 에 그대로 붙여 넣는 글이다. init 이 감지한 상태에 해당하는 단계만 넣고,
  * 검사와 생성 단계는 항상 넣는다. 버전을 올리며 정리할 것이 생기면 감지 항목을 더한다.
+ *
+ * 사용자가 직접 쓴 요청으로 읽히도록 반말 구어체로 통일한다. 사실은 `~했어`·`~없어`,
+ * 할 일은 `~해줘`, 사람이 정할 것은 `물어봐`·`알려줘` 로 끝낸다.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -111,8 +114,11 @@ type Step = string[];
 const bullets = (items: string[]): string[] => items.map((item) => `- ${item}`);
 
 const HEADER = [
-  "specthread 패키지 파일을 새 버전으로 갱신했다. 아래를 순서대로 처리해줘.",
-  "내가 직접 쓴 내용은 지우지 말고, 판단이 필요하면 멈추고 물어봐.",
+  "specthread 패키지 파일을 새 버전으로 갱신했어. 아래 단계를 순서대로 처리해줘.",
+  "",
+  "- 내가 직접 쓴 내용은 지우지 마.",
+  "- 판단이 필요하면 그 단계에서 멈추고 물어봐.",
+  "- 다 끝나면 바꾼 파일과 내가 확인해야 할 것을 짧게 정리해줘.",
 ];
 
 export const renderUpgradePrompt = (input: UpgradeInput): string => {
@@ -121,39 +127,39 @@ export const renderUpgradePrompt = (input: UpgradeInput): string => {
 
   if (input.agents === "broken") {
     steps.push([
-      "`AGENTS.md` 에 `<!-- specthread:start -->` 는 있고 `<!-- specthread:end -->` 가 없다. " +
-        "specthread 섹션이 끝나는 줄 다음에 끝 표식을 넣고 `npx specthread init` 을 다시 실행한다.",
+      "`AGENTS.md` 에 `<!-- specthread:start -->` 는 있는데 `<!-- specthread:end -->` 가 없어. " +
+        "specthread 섹션이 끝나는 줄 다음에 끝 표식을 넣고 `npx specthread init` 을 다시 실행해줘.",
     ]);
   }
 
   if (input.agents === "legacy") {
     steps.push([
-      "`AGENTS.md` 의 specthread 섹션을 `<!-- specthread:start -->` 와 `<!-- specthread:end -->` 로 감싼다. " +
-        "섹션은 `# specthread` 제목부터 그 섹션 끝까지이고, 그 밖의 내용은 그대로 둔다.",
+      "`AGENTS.md` 의 specthread 섹션을 `<!-- specthread:start -->` 와 `<!-- specthread:end -->` 로 감싸줘. " +
+        "섹션은 `# specthread` 제목부터 그 섹션 끝까지야. 그 밖의 내용은 그대로 둬.",
       ...bullets([
-        "specthread 섹션이 두 번 들어 있으면 뒤의 것을 지운다.",
-        "감싼 뒤 `npx specthread init` 을 다시 실행해 섹션을 새 버전으로 바꾼다.",
+        "specthread 섹션이 두 번 들어 있으면 뒤의 것을 지워줘.",
+        "감싼 다음 `npx specthread init` 을 다시 실행해서 섹션을 새 버전으로 바꿔줘.",
       ]),
     ]);
   }
 
   if (input.overwritten.length > 0) {
     steps.push([
-      "아래 파일을 새 버전으로 덮어썼다. git diff 로 확인하고, 내가 고쳐 둔 내용이 사라졌으면 알려줘.",
+      "아래 파일을 새 버전으로 덮어썼어. git diff 로 확인하고, 내가 고쳐 둔 내용이 사라졌으면 알려줘.",
       ...bullets(input.overwritten),
     ]);
   }
 
   if (input.oldSkills.length > 0) {
     steps.push([
-      "아래 옛 스킬 파일을 같은 이름의 `<이름>/SKILL.md` 와 비교한다. 내가 고친 부분이 없으면 지우고, 있으면 알려줘.",
+      "아래 스킬 파일은 예전 경로에 남아 있어. 같은 이름의 `<이름>/SKILL.md` 와 비교해서, 내가 고친 부분이 없으면 지우고 있으면 알려줘.",
       ...bullets(input.oldSkills),
     ]);
   }
 
   if (input.removedSkills.length > 0) {
     steps.push([
-      "아래 스킬은 패키지에서 뺐다. 해결 방법은 `npx specthread check` 출력이 함께 알려 준다. 내가 고친 부분이 없으면 지우고, 있으면 알려줘.",
+      "아래 스킬은 패키지에서 제거됐어. 내가 고친 부분이 없으면 지우고, 있으면 알려줘.",
       ...bullets(input.removedSkills),
     ]);
   }
@@ -162,12 +168,12 @@ export const renderUpgradePrompt = (input: UpgradeInput): string => {
   if (removed.length > 0) {
     const pathKeyInUse = removed.some((r) => !r.commented && PATH_KEYS.has(r.key));
     steps.push([
-      "설정 파일에서 제거된 키를 지운다. 주석으로만 남은 것은 그 설명 주석까지 지운다.",
+      "설정 파일에서 제거된 키를 지워줘. 주석으로만 남은 키는 그 설명 주석까지 지워줘.",
       ...bullets(removed.map((r) => `${r.file}: ${r.key}${r.commented ? " (주석)" : ""}`)),
       ...(pathKeyInUse
         ? [
-            "`rules`·`pending`·`project` 에 경로를 적어 쓰고 있었다면 지우지 말고 알려줘. " +
-              "경로가 `specthread/` 아래로 고정이라 파일을 옮겨야 한다.",
+            "`rules`·`pending`·`project` 에 경로를 적어 쓰고 있었다면 지우지 말고 먼저 알려줘. " +
+              "이 파일들은 이제 `specthread/` 아래로 위치가 고정돼서 파일을 옮겨야 해.",
           ]
         : []),
     ]);
@@ -176,7 +182,7 @@ export const renderUpgradePrompt = (input: UpgradeInput): string => {
   const stale = staleText(input.root);
   if (stale.length > 0) {
     steps.push([
-      "사용자 파일의 옛 문구를 지금 문구로 바꾼다.",
+      "사용자 파일에 남은 옛 문구를 지금 문구로 바꿔줘.",
       ...bullets(stale.map((s) => `${s.file}: "${s.before}" → "${s.after}"`)),
     ]);
   }
@@ -184,22 +190,21 @@ export const renderUpgradePrompt = (input: UpgradeInput): string => {
   const uncovered = uncoveredDefaults(input.root, config.path);
   if (uncovered.length > 0) {
     steps.push([
-      "`config.path` 가 아래 경로를 스캔하지 않는다. `path` 는 기본값과 합치지 않고 통째로 교체되므로, " +
-        "일부 키만 적으면 기본 경로가 빠진다. 의도한 것인지 물어봐.",
+      "`config.path` 가 아래 경로를 검사하지 않아. `path` 는 기본값과 합쳐지지 않고 통째로 바뀌어서, " +
+        "일부 키만 적으면 기본 경로가 빠져. 의도한 건지 물어봐.",
       ...bullets(uncovered.map((d) => `${d}/`)),
     ]);
   }
 
   steps.push([
-    "`npx specthread check` 를 실행하고 지적을 고친다.",
+    "`npx specthread check` 를 실행하고 지적을 고쳐줘. 규칙마다 고치는 방법이 출력 끝에 나와.",
     ...bullets([
-      "종료 코드 2 로 끝나면 출력된 설정 파일과 키부터 고친다.",
+      "종료 코드 2로 끝나면 출력된 설정 파일과 키부터 고쳐줘.",
       "`marker/unknown-type` 이 나오면 쓰고 있는 종류를 `config.markers.types` 에 추가할지 물어봐.",
-      "`heading/tail-order` 가 나오면 꼬리 절을 참조 → 미확정 사항 → 변경 이력 순서로 옮긴다.",
     ]),
   ]);
 
-  steps.push(["`npx specthread gen --write` 를 실행한 뒤 `npx specthread check` 가 0 건인지 확인한다."]);
+  steps.push(["`npx specthread gen --write` 를 실행한 다음 `npx specthread check` 가 지적 없이 끝나는지 확인해줘."]);
 
   const body = steps.flatMap(([first, ...rest], i) => [
     `${i + 1}. ${first}`,

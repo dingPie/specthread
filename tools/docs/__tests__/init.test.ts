@@ -65,7 +65,7 @@ test(
     p.write('AGENTS.md', SCAFFOLD_AGENTS);
     const r = cli(p.root, 'init', '--force');
     assert.equal(p.read('AGENTS.md'), SCAFFOLD_AGENTS);
-    assert.match(promptOf(r.stdout), /^1\. `AGENTS\.md` 의 specthread 섹션을 .* 감싼다/m);
+    assert.match(promptOf(r.stdout), /^1\. `AGENTS\.md` 의 specthread 섹션을 .* 감싸줘/m);
   }),
 );
 
@@ -81,7 +81,7 @@ test(
 
     const forced = cli(p.root, 'init', '--force');
     assert.equal(p.read('AGENTS.md'), broken);
-    assert.match(promptOf(forced.stdout), /^1\. .*`<!-- specthread:end -->` 가 없다/m);
+    assert.match(promptOf(forced.stdout), /^1\. .*`<!-- specthread:end -->` 가 없어/m);
   }),
 );
 
@@ -117,18 +117,18 @@ test(
 );
 
 test(
-  '패키지에서 뺀 스킬이 남아 있으면 지우지 않고 --force 프롬프트에 정리 단계를 넣는다',
+  '패키지에서 제거된 스킬이 남아 있으면 지우지 않고 --force 프롬프트에 정리 단계를 넣는다',
   withProject((p) => {
     p.write('.claude/skills/gen/SKILL.md', '옛 gen 스킬\n');
     p.write('.claude/skills/check.md', '옛 check 스킬\n');
 
     const r = cli(p.root, 'init');
     assert.equal(p.read('.claude/skills/gen/SKILL.md'), '옛 gen 스킬\n');
-    assert.match(r.stdout, /패키지에서 뺀 스킬/);
+    assert.match(r.stdout, /패키지에서 제거된 스킬 파일/);
     assert.match(r.stdout, /npx specthread init --force/);
 
     const prompt = promptOf(cli(p.root, 'init', '--force').stdout);
-    assert.match(prompt, /^1\. 아래 스킬은 패키지에서 뺐다/m);
+    assert.match(prompt, /^1\. 아래 스킬은 패키지에서 제거됐어/m);
     assert.match(prompt, /^ {3}- \.claude\/skills\/check\.md$/m);
     assert.match(prompt, /^ {3}- \.claude\/skills\/gen\/SKILL\.md$/m);
   }),
@@ -166,11 +166,11 @@ test(
     const prompt = promptOf(cli(p.root, 'init', '--force').stdout);
 
     assert.deepEqual(stepNumbers(prompt), [1, 2, 3, 4, 5, 6]);
-    assert.match(prompt, /^1\. 아래 파일을 새 버전으로 덮어썼다.*\n {3}- specthread\/rules\.md$/m);
+    assert.match(prompt, /^1\. 아래 파일을 새 버전으로 덮어썼어.*\n {3}- specthread\/rules\.md$/m);
     assert.match(prompt, /^ {3}- specthread\/config\.jsonc: features\.emDash$/m);
     assert.match(prompt, /^ {3}- specthread\/config\.jsonc: rules \(주석\)$/m);
     // 주석으로만 남은 경로 키는 옮길 파일이 없다
-    assert.doesNotMatch(prompt, /파일을 옮겨야 한다/);
+    assert.doesNotMatch(prompt, /파일을 옮겨야 해/);
     assert.match(prompt, new RegExp(`^ {3}- ${PROJECT_PATH}: "\`config\.jsonc\` 에서 경로를 override`, 'm'));
     assert.match(prompt, /^ {3}- docs\/$/m);
   }),
