@@ -12,6 +12,21 @@ const withProject = (fn: (p: Project) => void) => () => {
 };
 
 test(
+  'check 요약은 검사 경로마다 파일 수를 내고, 없는 경로는 실패 없이 없음으로 표시한다',
+  withProject((p) => {
+    const fresh = cli(p.root, 'check');
+    assert.equal(fresh.status, 0);
+    assert.match(fresh.stdout, /검사 경로 docs\/ 없음$/m);
+
+    p.write('docs/a.md', '# a\n');
+    assert.match(cli(p.root, 'check').stdout, /검사 경로 docs\/ 파일 1$/m);
+
+    p.write('specthread/config.local.jsonc', '{ "path": { "docs": ["docs/"], "source": ["src/"] } }');
+    assert.match(cli(p.root, 'check').stdout, /검사 경로 docs\/ 파일 1 \/ src\/ 없음$/m);
+  }),
+);
+
+test(
   'check 는 규칙별 집계에 해결 방법을 함께 낸다',
   withProject((p) => {
     p.write(

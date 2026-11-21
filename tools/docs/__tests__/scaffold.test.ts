@@ -20,8 +20,12 @@ test('새로 init 한 프로젝트는 check 0 건, gen 0 건이다', () => {
 });
 
 test('scaffold 템플릿은 기본 제외 없이 검사해도 지적이 없다', () => {
-  // 사용자 프로젝트에서는 템플릿을 검사하지 않으므로, 템플릿 자체의 형식은 여기서만 검증된다
-  const index = buildIndex(project.root, loadConfig(project.root));
+  // 사용자 프로젝트에서는 템플릿을 검사하지 않으므로, 템플릿 자체의 형식은 여기서만 검증된다.
+  // 기본 설정은 템플릿을 색인하지 않아서 경로를 직접 더한다
+  const config = loadConfig(project.root);
+  const index = buildIndex(project.root, { ...config, path: { ...config.path, templates: [`${TEMPLATES_DIR}/`] } });
+  assert.ok(index.files.has(`${TEMPLATES_DIR}/plan.md`));
+  assert.ok(index.files.has(`${TEMPLATES_DIR}/spec.md`));
   const findings = collectFindings(index)
     .filter((f) => f.file.startsWith(`${TEMPLATES_DIR}/`) && !isIgnored(index, f))
     .map((f) => `${f.file}:${f.line} ${f.rule} ${f.message}`);

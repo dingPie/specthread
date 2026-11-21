@@ -169,7 +169,6 @@ export const DEFAULT_FILE_KINDS: FileKindsConfig = {
 export const DEFAULT_CONFIG: SpecthreadConfig = {
   path: {
     docs: ["docs/"],
-    specthread: ["specthread/"],
   },
   fileKinds: DEFAULT_FILE_KINDS,
   features: {

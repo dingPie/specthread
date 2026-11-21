@@ -16,7 +16,6 @@ import {
   LOCAL_CONFIG_PATH,
   PENDING_PATH,
   PROJECT_PATH,
-  SPECTHREAD_DIR,
 } from "../constants/paths.ts";
 import { normalizeConfigPath, underPath } from "../utils/path-match.ts";
 
@@ -97,14 +96,13 @@ const staleText = (root: string): StaleText[] =>
  * 기본 스캔 경로 중 설정에서 빠진 것. 그 디렉터리가 있을 때만 본다.
  *
  * `path` 는 기본값과 합치지 않고 통째로 교체하므로 일부 키만 적으면 기본 경로가 빠진다.
- * `specthread/` 의 규약 파일은 `path` 와 관계없이 읽으므로 대상에서 뺀다.
  */
 const uncoveredDefaults = (root: string, path: PathConfig): string[] => {
   const bases = Object.values(path).flat().map(normalizeConfigPath);
   return Object.values(DEFAULT_CONFIG.path)
     .flat()
     .map(normalizeConfigPath)
-    .filter((d) => d !== SPECTHREAD_DIR && existsSync(join(root, d)))
+    .filter((d) => existsSync(join(root, d)))
     .filter((d) => !bases.some((b) => underPath(b, d) || underPath(d, b)));
 };
 
