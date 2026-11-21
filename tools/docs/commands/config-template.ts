@@ -47,6 +47,7 @@ ${wrapList(c.fileKinds.source, "      ")}
   // 디렉터리면 재귀 스캔, 파일이면 직접 로드.
   // 적으면 기본값을 통째로 교체한다 (키 단위로 합치지 않는다).
   // specthread/ 의 rules·pending·project 는 여기 없어도 항상 읽는다.
+  // check 의 색인 요약에 경로마다 파일 수가 나오고, 없는 경로는 "없음" 으로 표시된다.
   // 예: "source": ["client/src/"], "data": ["data/"]
   //     "meta": ["CLAUDE.md", "AGENTS.md"]
   "path": {

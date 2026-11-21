@@ -5,7 +5,8 @@
  */
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { RuleGroup } from "../constants/rules.ts";
+import { FIX } from "../constants/fixes.ts";
+import { RULE, type RuleGroup } from "../constants/rules.ts";
 import { buildIndex } from "../utils/scan.ts";
 import { groupAllowed, isDoc, tailOrderOk } from "../utils/scope.ts";
 import { applyToc } from "../gen/toc.ts";
@@ -85,8 +86,9 @@ for (const path of changed) {
   console.log(`  ${path}`);
 }
 if (skipped.length > 0) {
-  console.log(`\n꼬리 절 순서가 어긋나 건너뜀 - ${skipped.length} 건 (heading/tail-order)`);
+  console.log(`\n꼬리 절 순서가 어긋나 건너뜀 - ${skipped.length} 건 (${RULE.HEADING.TAIL_ORDER})`);
   for (const path of skipped) console.log(`  ${path}`);
+  console.log(`  → ${FIX[RULE.HEADING.TAIL_ORDER]}`);
 }
 if (!write && changed.length > 0) {
   console.log("\n실제로 쓰려면 --write");

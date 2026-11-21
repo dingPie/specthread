@@ -80,7 +80,7 @@ npx specthread gen --write   # 생성 결과 적용
 
 ## 작업 흐름
 
-구현 전에 spec 을 읽고, 구현 후에 spec 을 갱신합니다. 진행 중 정하지 못한 것은 `PENDING::<종류>::<slug>` 마커로 남기고 작업을 계속합니다.
+구현 전에 spec 을 읽습니다. 코드 변경이 시스템 동작을 바꾸면 spec 을 갱신하는데, 계획 문서가 있는 작업은 `/plan-close` 에서, 없으면 같은 커밋에서 갱신합니다. 코드와 spec 이 다르면 AI 가 임의로 한쪽에 맞추지 않고 사용자에게 확인합니다. 진행 중 정하지 못한 것은 `PENDING::<종류>::<slug>` 마커로 남기고 작업을 계속합니다.
 
 ```
 You: 소셜 로그인 계획 세워줘
@@ -101,7 +101,8 @@ Claude Code 에서는 아래 스킬로 같은 흐름을 실행합니다. 스킬 
 - `/plan-open`: 작업 계획 문서 작성·확정
 - `/plan-run`: 계획에 따른 구현과 기록
 - `/plan-close`: 완료된 작업을 spec 에 반영
-- `/check`, `/gen`: 검사·생성 실행과 결과 안내
+
+검사와 생성은 스킬 없이 `npx specthread check`, `npx specthread gen --write` 로 실행합니다. check 는 규칙별로 해결 방법을 함께 출력합니다.
 
 Cursor, Copilot, Codex, Gemini 는 `AGENTS.md` 를 직접 읽습니다. 스킬이 필요 없으면 `init --tools cursor` 처럼 `claude` 를 빼고 실행합니다.
 
