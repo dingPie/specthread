@@ -149,7 +149,10 @@ const ensureGitignore = (cwd: string): void => {
   console.log(`  .gitignore ${LOCAL_CONFIG_PATH} 추가`);
 };
 
-const SKILLS = ["check", "gen", "plan-open", "plan-run", "plan-close"];
+const SKILLS = ["plan-open", "plan-run", "plan-close"];
+
+/** 패키지에서 뺀 스킬. 해결 방법은 check 출력이 함께 알려 준다 */
+const REMOVED_SKILLS = ["check", "gen"];
 
 /** 업데이트 프롬프트 구분선. 사용자가 이 사이를 복사해 AI 에 전달한다 */
 const PROMPT_START = "── 업데이트 프롬프트: 아래를 AI 에게 그대로 전달한다 ──────────────";
@@ -213,6 +216,7 @@ export const init = (args: string[]): void => {
   ensureGitignore(cwd);
 
   const oldSkills: string[] = [];
+  const removedSkills: string[] = [];
   if (tools.has("claude")) {
     ensureClaudeMd(cwd);
 
@@ -226,17 +230,27 @@ export const init = (args: string[]): void => {
       if (existsSync(join(cwd, ".claude", "skills", `${name}.md`))) oldSkills.push(`.claude/skills/${name}.md`);
     }
 
+    for (const name of REMOVED_SKILLS) {
+      for (const path of [`.claude/skills/${name}/SKILL.md`, `.claude/skills/${name}.md`]) {
+        if (existsSync(join(cwd, path))) removedSkills.push(path);
+      }
+    }
+
     // 사용자가 고쳤을 수 있으므로 지우지 않고 알리기만 한다
     if (oldSkills.length > 0) {
       console.log("\n  이전 형식의 스킬 파일이 남아 있다. Claude Code 가 읽지 않으므로 지워도 된다:");
       for (const path of oldSkills) console.log(`    ${path}`);
+    }
+    if (removedSkills.length > 0) {
+      console.log("\n  패키지에서 뺀 스킬이 남아 있다. check 출력이 해결 방법을 함께 알려 주므로 지워도 된다:");
+      for (const path of removedSkills) console.log(`    ${path}`);
     }
   }
 
   if (force) {
     console.log(`\n--force 는 패키지 파일만 갱신한다. ${CONFIG_PATH}, ${PROJECT_PATH}, ${PENDING_PATH} 는 그대로 둔다.`);
     console.log(`\n${PROMPT_START}`);
-    console.log(renderUpgradePrompt({ root: cwd, agents, overwritten, oldSkills }));
+    console.log(renderUpgradePrompt({ root: cwd, agents, overwritten, oldSkills, removedSkills }));
     console.log(PROMPT_END);
     return;
   }
@@ -244,7 +258,7 @@ export const init = (args: string[]): void => {
   if (agents === "broken") {
     console.log(`\nAGENTS.md 의 specthread 섹션 끝에 ${SPECTHREAD_END} 를 넣고 다시 실행한다.`);
   }
-  if (agents === "legacy" || oldSkills.length > 0) {
+  if (agents === "legacy" || oldSkills.length > 0 || removedSkills.length > 0) {
     console.log("\n이전 버전에서 올린 프로젝트로 보인다. `npx specthread init --force` 로 패키지 파일을 갱신하면 남은 정리를 위한 프롬프트를 출력한다.");
   }
 

@@ -28,6 +28,8 @@ export interface UpgradeInput {
   overwritten: string[];
   /** `<이름>/SKILL.md` 가 아닌 이전 경로에 남은 스킬 파일 */
   oldSkills: string[];
+  /** 패키지에서 뺀 스킬 중 프로젝트에 남은 파일 */
+  removedSkills: string[];
 }
 
 /** 사용자 파일에 남은 옛 scaffold 문구와 지금 문구 */
@@ -146,6 +148,13 @@ export const renderUpgradePrompt = (input: UpgradeInput): string => {
     steps.push([
       "아래 옛 스킬 파일을 같은 이름의 `<이름>/SKILL.md` 와 비교한다. 내가 고친 부분이 없으면 지우고, 있으면 알려줘.",
       ...bullets(input.oldSkills),
+    ]);
+  }
+
+  if (input.removedSkills.length > 0) {
+    steps.push([
+      "아래 스킬은 패키지에서 뺐다. 해결 방법은 `npx specthread check` 출력이 함께 알려 준다. 내가 고친 부분이 없으면 지우고, 있으면 알려줘.",
+      ...bullets(input.removedSkills),
     ]);
   }
 

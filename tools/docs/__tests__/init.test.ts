@@ -99,12 +99,38 @@ test(
 test(
   '옛 경로의 스킬 파일이 있으면 지우지 않고 업그레이드 안내를 낸다',
   withProject((p) => {
-    p.write('.claude/skills/check.md', '옛 스킬\n');
+    p.write('.claude/skills/plan-open.md', '옛 스킬\n');
     const r = cli(p.root, 'init');
-    assert.equal(p.read('.claude/skills/check.md'), '옛 스킬\n');
-    assert.match(r.stdout, /\.claude\/skills\/check\.md/);
+    assert.equal(p.read('.claude/skills/plan-open.md'), '옛 스킬\n');
+    assert.match(r.stdout, /\.claude\/skills\/plan-open\.md/);
     assert.match(r.stdout, /npx specthread init --force/);
-    assert.ok(existsSync(join(p.root, '.claude/skills/check/SKILL.md')));
+    assert.ok(existsSync(join(p.root, '.claude/skills/plan-open/SKILL.md')));
+  }),
+);
+
+test(
+  'check·gen 스킬은 설치하지 않는다',
+  withProject((p) => {
+    assert.ok(!existsSync(join(p.root, '.claude/skills/check')));
+    assert.ok(!existsSync(join(p.root, '.claude/skills/gen')));
+  }),
+);
+
+test(
+  '패키지에서 뺀 스킬이 남아 있으면 지우지 않고 --force 프롬프트에 정리 단계를 넣는다',
+  withProject((p) => {
+    p.write('.claude/skills/gen/SKILL.md', '옛 gen 스킬\n');
+    p.write('.claude/skills/check.md', '옛 check 스킬\n');
+
+    const r = cli(p.root, 'init');
+    assert.equal(p.read('.claude/skills/gen/SKILL.md'), '옛 gen 스킬\n');
+    assert.match(r.stdout, /패키지에서 뺀 스킬/);
+    assert.match(r.stdout, /npx specthread init --force/);
+
+    const prompt = promptOf(cli(p.root, 'init', '--force').stdout);
+    assert.match(prompt, /^1\. 아래 스킬은 패키지에서 뺐다/m);
+    assert.match(prompt, /^ {3}- \.claude\/skills\/check\.md$/m);
+    assert.match(prompt, /^ {3}- \.claude\/skills\/gen\/SKILL\.md$/m);
   }),
 );
 

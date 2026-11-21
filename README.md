@@ -101,7 +101,8 @@ Claude Code 에서는 아래 스킬로 같은 흐름을 실행합니다. 스킬 
 - `/plan-open`: 작업 계획 문서 작성·확정
 - `/plan-run`: 계획에 따른 구현과 기록
 - `/plan-close`: 완료된 작업을 spec 에 반영
-- `/check`, `/gen`: 검사·생성 실행과 결과 안내
+
+검사와 생성은 스킬 없이 `npx specthread check`, `npx specthread gen --write` 로 실행합니다. check 는 규칙별로 해결 방법을 함께 출력합니다.
 
 Cursor, Copilot, Codex, Gemini 는 `AGENTS.md` 를 직접 읽습니다. 스킬이 필요 없으면 `init --tools cursor` 처럼 `claude` 를 빼고 실행합니다.
 
