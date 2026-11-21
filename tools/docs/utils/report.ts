@@ -1,10 +1,12 @@
 /**
- * 검사 결과 출력. 파일별로 묶고 규칙별 집계를 붙인다.
+ * 검사 결과 출력. 파일별로 묶고 규칙별 집계와 해결 방법을 붙인다.
  *
  * **터미널 꾸미기는 이 파일에만 둔다.** 다른 곳에서 ANSI 문자열을 만들면 제어 문자가
  * 소스 곳곳에 박혀 눈에 안 보이고, grep·sed 같은 도구가 그 파일을 못 다루게 된다.
  */
 import { EXIT } from "../constants/exit.ts";
+import { FIX } from "../constants/fixes.ts";
+import type { RuleId } from "../constants/rules.ts";
 import type { Finding } from "../types.ts";
 
 /** 터미널 강조. 규칙 이름을 흐리게 두어 메시지가 먼저 읽히게 한다 */
@@ -17,6 +19,7 @@ const RESET = "\x1b[0m";
  *
  * 종료 코드를 돌려준다 - 지적이 있으면 `EXIT.FINDINGS`.
  * 규칙별 집계가 있어야 어느 규칙이 소음을 내는지 보고 판단할 수 있다.
+ * 해결 방법은 지적마다 반복하지 않고 규칙별로 한 번만 낸다.
  */
 export const report = (
   findings: Finding[],
@@ -46,11 +49,14 @@ export const report = (
       );
   }
 
-  const byRule = new Map<string, number>();
+  const byRule = new Map<RuleId, number>();
   for (const f of findings) byRule.set(f.rule, (byRule.get(f.rule) ?? 0) + 1);
+  const width = Math.max(...[...byRule.keys()].map((rule) => rule.length));
   console.log(`\n${BOLD}규칙별${RESET}`);
   for (const [rule, n] of [...byRule.entries()].sort((a, b) => b[1] - a[1]))
-    console.log(`  ${String(n).padStart(5)}  ${rule}`);
+    console.log(
+      `  ${String(n).padStart(5)}  ${rule.padEnd(width)}  → ${FIX[rule]}`,
+    );
 
   return EXIT.FINDINGS;
 };
