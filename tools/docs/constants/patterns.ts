@@ -23,9 +23,9 @@ export const ITEM_HEADING = new RegExp(`^###\\s+\`\\[(${KIND}::${SLUG})\\]\`\\s*
 export const ITEM_AS_LI = new RegExp(`^\\s*-\\s+\`\\[${KIND}::${SLUG}\\]\``);
 
 /**
- * 미확정 항목 세 모양. 종류와 slug 를 캡처한다.
+ * 보류 항목 세 모양. 종류와 slug 를 캡처한다.
  *
- * 관리 문서 항목은 `###` 헤딩 (`` `[slug]` ``), 문서 미확정 사항 절은 생성된 백링크
+ * 관리 문서 항목은 `###` 헤딩 (`` `[slug]` ``), 문서 보류 사항 절은 생성된 백링크
  * (`` [`slug`](...) ``), 둘 다 아닌 `li` (`` - `[slug]` ``) 는 낡은 형식이다.
  */
 export const PENDING_ITEM = new RegExp(`^(?:\\s*-|###)\\s+[\`\\[]+(${KIND})::(${SLUG})[\`\\]]+`);

@@ -24,7 +24,7 @@ export const RULE = {
     NUMBERED_TAIL: 'heading/numbered-tail',
     /** 꼬리 절 예약어를 본문 절이 쓴다 */
     TAIL_NAME_REUSED: 'heading/tail-name-reused',
-    /** 꼬리 절이 참조 → 미확정 사항 → 변경 이력 순서가 아니다 */
+    /** 꼬리 절이 참조 → 보류 사항 → 변경 이력 순서가 아니다 */
     TAIL_ORDER: 'heading/tail-order',
   },
   LINK: {
@@ -58,7 +58,7 @@ export const RULE = {
     SUMMARY_MISSING: 'pending/summary-missing',
     /** 절 머리 요약 표가 항목과 어긋난다 */
     SUMMARY_STALE: 'pending/summary-stale',
-    /** 문서의 미확정 사항 절이 관리 문서 백링크와 어긋난다. 절이 없는 문서는 대상 밖 */
+    /** 문서의 보류 사항 절이 관리 문서 백링크와 어긋난다. 절이 없는 문서는 대상 밖 */
     SECTION_STALE: 'pending/section-stale',
   },
   REFERENCE: {

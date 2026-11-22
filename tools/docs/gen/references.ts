@@ -134,7 +134,7 @@ export const referenceBlock = (file: IndexedFile, config: SpecthreadConfig): str
 /**
  * 참조 절을 새로 넣은 줄 목록.
  *
- * 꼬리 절 순서가 참조 → 미확정 사항 → 변경 이력 이므로 (`specthread/rules.md`
+ * 꼬리 절 순서가 참조 → 보류 사항 → 변경 이력 이므로 (`specthread/rules.md`
  * §2-5) 뒤 두 개 중 먼저 오는 것 앞에 놓는다. 꼬리 절이 하나도 없으면 파일 끝에
  * 붙이고, 이때만 앞에 빈 줄을 하나 둔다 - 다른 자리는 앞 절이 이미 빈 줄로 끝난다.
  */

@@ -194,10 +194,10 @@ test('본문 절 이름이 꼬리 이름과 겹쳐도 범위가 뒤집히지 않
   assert.deepEqual(parsed.refSection, { start: 7, end: 7 });
 });
 
-test('미확정 항목을 종류와 slug 로 읽는다', () => {
+test('보류 항목을 종류와 slug 로 읽는다', () => {
   const parsed = parseMarkdown('docs/x.md', [
     '# 제목',
-    '## 미확정 사항',
+    '## 보류 사항',
     '- `[system::rules-autoload]` 설명',
     '- `[balance::token-limit]` 시점 표기까지 [2026-05-02 → M2-B]',
   ]);
@@ -211,7 +211,7 @@ test('구 형식 체크박스 항목은 읽지 않는다', () => {
   // 체크박스는 항목 형식이 아니다. 해결되면 지우므로 `[x]` 상태가 존재하지 않는다
   const parsed = parseMarkdown('docs/x.md', [
     '# 제목',
-    '## 미확정 사항',
+    '## 보류 사항',
     '- [ ] **[system::rules-autoload]** 설명',
   ]);
   assert.deepEqual(parsed.pendingItems, []);

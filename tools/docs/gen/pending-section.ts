@@ -1,12 +1,12 @@
 /**
- * 미확정 사항 절 생성 - 관리 문서 항목의 백링크를 문서 기준으로 뒤집는다.
+ * 보류 사항 절 생성 - 관리 문서 항목의 백링크를 문서 기준으로 뒤집는다.
  *
  * 각 관리 문서 항목의 `참조:` 줄이 어느 문서를 가리키는지 이미 안다. 그것을 대상
- * 문서 기준으로 재정렬하면 그 문서의 미확정 목록이 나온다 (`specthread/rules.md` §4).
+ * 문서 기준으로 재정렬하면 그 문서의 보류 목록이 나온다 (`specthread/rules.md` §4).
  * 목차·참조 절과 같은 방식이다 - 정본은 관리 문서이고 여기는 생성 뷰다.
  *
  * **이미 절을 가진 문서만 채운다.** 참조는 _이 항목이 이 문서와 관련 있다_ 는
- * 인용이지 _이 문서가 이 미확정을 소유한다_ 는 선언이 아니다. 배경으로 인용될 뿐인
+ * 인용이지 _이 문서가 이 보류 항목을 소유한다_ 는 선언이 아니다. 배경으로 인용될 뿐인
  * 문서에 절을 새로 만들면 소유하지 않는 것을 소유한 것으로 보인다.
  *
  * **소비자가 둘이다.** `bin/generate.ts` 가 파일에 쓰고, `checks/pending.ts` 가 같은
@@ -67,7 +67,7 @@ export const invertByTarget = (pending: IndexedFile): Map<string, Item[]> => {
 };
 
 /**
- * 미확정 사항 절 본문. 절 자체가 없는 문서는 빈 배열 - 새로 만들지 않는다.
+ * 보류 사항 절 본문. 절 자체가 없는 문서는 빈 배열 - 새로 만들지 않는다.
  *
  * 절은 있는데 가리키는 항목이 0 인 경우도 있다 (전부 해소됐거나 애초에 없음). 그때도
  * _해당 없음_ 을 명시해 빈 채로 방치하지 않는다 - 빈 결과와 stale 결과를 구분 못 하면
@@ -83,7 +83,7 @@ export const pendingSectionBlock = (file: IndexedFile, byTarget: Map<string, Ite
   const name = basename(PENDING_PATH);
 
   if (items.length === 0) {
-    return ['', `해당 없음 - 이 문서를 가리키는 미확정 항목이 없다 ([\`${name}\`](${link})).`, ''];
+    return ['', `해당 없음 - 이 문서를 가리키는 보류 항목이 없다 ([\`${name}\`](${link})).`, ''];
   }
 
   return [
@@ -95,7 +95,7 @@ export const pendingSectionBlock = (file: IndexedFile, byTarget: Map<string, Ite
   ];
 };
 
-/** 미확정 사항 절을 채운 문서 줄 목록. 바꿀 것이 없으면 null */
+/** 보류 사항 절을 채운 문서 줄 목록. 바꿀 것이 없으면 null */
 export const applyPendingSection = (
   file: IndexedFile,
   lines: string[],

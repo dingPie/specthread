@@ -40,7 +40,7 @@ specthread/
   config.jsonc     설정
   rules.md         문서 형식 규칙
   project.md       설정값의 맥락과 근거
-  pending.md       미확정 사항 정본
+  pending.md       보류 사항 정본
   templates/       spec·plan 문서 골격
 AGENTS.md          AI 도구 진입점
 CLAUDE.md          @AGENTS.md
@@ -71,7 +71,7 @@ npx specthread gen --write   # 생성 결과 적용
 ```
 
 - `check`: 지적이 있으면 종료 코드 1, 설정을 읽지 못하면 2
-- `gen`: 목차, 참조 절, 미확정 사항 목록 생성. `--write` 없이는 바뀔 파일 목록만 출력
+- `gen`: 목차, 참조 절, 보류 사항 목록 생성. `--write` 없이는 바뀔 파일 목록만 출력
 - `init --force`: `config.jsonc`, `project.md`, `pending.md` 는 덮어쓰지 않음
 
 규칙 전체와 규칙 ID 는 [`rules.md`](https://github.com/dingPie/specthread/blob/main/scaffold/rules.md) 에 있습니다. `init` 이 같은 파일을 `specthread/rules.md` 로 설치합니다.

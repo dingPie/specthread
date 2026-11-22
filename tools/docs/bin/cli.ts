@@ -12,7 +12,7 @@ commands:
   init --force                   패키지 파일(rules·템플릿·스킬)을 새 버전으로 갱신하고
                                  남은 정리를 위한 업데이트 프롬프트 출력
   check                          문서 정합성 검사 (30개 규칙)
-  gen [--write]                  참조 절·목차·미확정 사항 요약 생성
+  gen [--write]                  참조 절·목차·보류 사항 요약 생성
   help                           이 도움말 표시
 
 examples:

@@ -54,7 +54,7 @@ const summary = {
     `문서 ${counts.doc} / 소스 ${counts.source}`,
     pathCounts(root, config.path, [...index.files.keys()]),
     `헤딩 ${headings} / 링크 ${links} / 절 참조 ${sectionRefs}`,
-    `마커 ${markers} / 미확정 항목 ${pendingItems}`,
+    `마커 ${markers} / 보류 항목 ${pendingItems}`,
     `인라인 억제 ${ignoredLines}`,
   ],
 };

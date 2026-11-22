@@ -41,7 +41,7 @@ plan 문서의 내용을 spec 문서에 흡수한다.
 
 ### 3. 정합성 검사
 
-1. `npx specthread gen --write`로 참조 절·목차·미확정 사항 절을 갱신한다.
+1. `npx specthread gen --write`로 참조 절·목차·보류 사항 절을 갱신한다.
 2. `npx specthread check`로 전체 정합성을 확인한다.
 3. 지적이 있으면 수정한다.
 

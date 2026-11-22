@@ -2,7 +2,7 @@
  * 관리 문서 항목 형식 (`specthread/rules.md` §4-2).
  *
  * 이 검사는 관리 문서 한 파일에만 걸린다. 항목이 한곳에 모이는 것이 그 문서의 존재
- * 이유라서, 다른 문서에 같은 모양이 나타나면 그건 미확정 사항 절 (생성 뷰) 이고
+ * 이유라서, 다른 문서에 같은 모양이 나타나면 그건 보류 사항 절 (생성 뷰) 이고
  * 형식이 다르다 - 뷰는 `li`, 정본은 `###` 헤딩이다.
  */
 import { dirname, join, normalize } from 'node:path';
@@ -212,7 +212,7 @@ const inspectSummary = (file: IndexedFile, index: DocIndex): Finding[] => {
 };
 
 /**
- * 문서 미확정 사항 절 ↔ 관리 문서 백링크 일치.
+ * 문서 보류 사항 절 ↔ 관리 문서 백링크 일치.
  *
  * 목차·참조 절과 같은 구조다. 관리 문서를 제외한 모든 문서가 대상이다 -
  * 절 자체가 없는 문서는 `gen/pending-section.ts` 가 건드리지 않으므로 지적도 없다.
@@ -238,7 +238,7 @@ const inspectPendingSection = (index: DocIndex): Finding[] => {
         file: file.path,
         line: file.pendingSection.start,
         rule: RULE.PENDING.SECTION_STALE,
-        message: `미확정 사항 절이 관리 문서와 어긋난다 - 적힌 것 ${count(actual)} / 관리 문서 ${count(expected)}`,
+        message: `보류 사항 절이 관리 문서와 어긋난다 - 적힌 것 ${count(actual)} / 관리 문서 ${count(expected)}`,
       });
     }
   }

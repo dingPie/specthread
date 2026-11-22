@@ -4,11 +4,37 @@ import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { VERSIONS } from '../commands/upgrade/index.ts';
+import { TAIL } from '../constants/docs.ts';
+import { cli, makeProject } from './project-fixture.ts';
 
 const scaffoldText = (file: string): string => {
   const url = new URL(`../../../scaffold/${basename(file)}`, import.meta.url);
   return readFileSync(fileURLToPath(url), 'utf8');
 };
+
+/** `init --force` 출력에서 구분선 사이의 업데이트 프롬프트 */
+const forcePrompt = (root: string): string => {
+  const stdout = cli(root, 'init', '--force').stdout;
+  const m = /── 업데이트 프롬프트[^\n]*\n([\s\S]*?)\n─+\n/.exec(stdout);
+  assert.ok(m, '업데이트 프롬프트가 없다');
+  return m[1];
+};
+
+test('옛 꼬리 절 제목이 있는 문서를 현재 이름으로 안내하고, 코드 블록 안 제목은 대상이 아니다', () => {
+  const p = makeProject();
+  try {
+    p.write('docs/a.md', '# a\n\n## 1. 개요\n\n## 미확정 사항\n\n## 변경 이력\n');
+    p.write('docs/b.md', '# b\n\n```markdown\n## 미확정 사항\n```\n');
+
+    const prompt = forcePrompt(p.root);
+    const instruction = `\`## 미확정 사항\` 절 제목을 \`## ${TAIL.PENDING}\` 으로 바꿔줘`;
+    assert.ok(prompt.includes(instruction));
+    assert.match(prompt, /^ {3}- docs\/a\.md$/m);
+    assert.doesNotMatch(prompt, /^ {3}- docs\/b\.md$/m);
+  } finally {
+    p.dispose();
+  }
+});
 
 test('버전 파일은 오래된 버전부터 놓인다', () => {
   const versions = VERSIONS.map((v) => v.version.split('.').map(Number));
