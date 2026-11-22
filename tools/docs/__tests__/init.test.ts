@@ -102,9 +102,12 @@ test(
     p.write('.claude/skills/plan-open.md', '옛 스킬\n');
     const r = cli(p.root, 'init');
     assert.equal(p.read('.claude/skills/plan-open.md'), '옛 스킬\n');
-    assert.match(r.stdout, /\.claude\/skills\/plan-open\.md/);
+    assert.match(r.stdout, /이전 버전에서 올린 프로젝트로 보인다/);
     assert.match(r.stdout, /npx specthread init --force/);
     assert.ok(existsSync(join(p.root, '.claude/skills/plan-open/SKILL.md')));
+
+    const prompt = promptOf(cli(p.root, 'init', '--force').stdout);
+    assert.match(prompt, /^1\. 아래 스킬 파일은 예전 경로에 남아 있어.*\n {3}- \.claude\/skills\/plan-open\.md$/m);
   }),
 );
 
@@ -124,7 +127,7 @@ test(
 
     const r = cli(p.root, 'init');
     assert.equal(p.read('.claude/skills/gen/SKILL.md'), '옛 gen 스킬\n');
-    assert.match(r.stdout, /패키지에서 제거된 스킬 파일/);
+    assert.match(r.stdout, /이전 버전에서 올린 프로젝트로 보인다/);
     assert.match(r.stdout, /npx specthread init --force/);
 
     const prompt = promptOf(cli(p.root, 'init', '--force').stdout);

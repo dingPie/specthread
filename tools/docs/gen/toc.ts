@@ -17,7 +17,7 @@ import type { Heading, IndexedFile } from "../types.ts";
  * 목차 줄 목록. 목차를 둘 이유가 없으면 빈 배열.
  *
  * `##` 만 넣는다. `###` 까지 넣으면 목차가 본문보다 긴 문서가 나온다.
- * 꼬리 절도 넣는다 - 참조·미확정 사항·변경 이력이 어디 있는지 알아야 한다.
+ * 꼬리 절도 넣는다 - 참조·보류 사항·변경 이력이 어디 있는지 알아야 한다.
  */
 export const tocLines = (headings: Heading[]): string[] =>
   headings

@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG } from '../config.schema.ts';
 import { PENDING_PATH } from '../constants/paths.ts';
 import { parseMarkdown } from '../utils/parse.ts';
 import type { DocIndex, IndexedFile } from '../types.ts';
+import { makeProject } from './project-fixture.ts';
 
 /** 관리 문서 한 파일만 담은 색인. 검사가 그 경로만 보므로 이름이 중요하다 */
 const indexOf = (lines: string[], config = DEFAULT_CONFIG): DocIndex => {
@@ -95,20 +96,22 @@ test('선택지 하나는 지적하지 않는다', () => {
   assert.deepEqual(rules(['(a) 만 있으면 나열이 아니다']), []);
 });
 
-test('작업 문서 참조를 지적한다', () => {
-  // 관리 문서는 specthread/ 에 있으므로 docs/work/ 참조는 ../ 로 올라간다
-  assert.deepEqual(
-    rules(['출처: [`m2a-st-b6.md`](../docs/work/m2a-st-b6.md) §2-3']),
-    ['pending/work-link'],
-  );
+test('작업 문서를 링크해도 지적하지 않는다', () => {
+  assert.deepEqual(rules(['상세 설계: [`m2a-st-b6.md`](../docs/work/m2a-st-b6.md) §2-3']), []);
+  assert.deepEqual(rules(['상세 설계: `docs/work/m2a-st-b6.md` §2-3']), []);
 });
 
-test('코드 스팬의 작업 문서 경로도 지적한다', () => {
-  assert.deepEqual(rules(['출처: `docs/work/m2a-st-b6.md` §2-3']), ['pending/work-link']);
-});
-
-test('작업 폴더 밖의 work 이름은 지적하지 않는다', () => {
-  assert.deepEqual(rules(['참고: [`x.md`](./work/x.md)']), []);
+test('삭제된 작업 문서를 가리키는 링크는 link/target 이 지적한다', () => {
+  const p = makeProject();
+  try {
+    // 변경 이력 안의 링크는 검사하지 않으므로 본문(참조 절 앞)에 넣는다
+    const link = '상세 설계: [`gone.md`](../docs/work/gone.md)\n\n## 참조';
+    p.write(PENDING_PATH, p.read(PENDING_PATH).replace('## 참조', link));
+    const found = p.findings().filter((f) => f.file === PENDING_PATH).map((f) => f.rule);
+    assert.ok(found.includes('link/target'));
+  } finally {
+    p.dispose();
+  }
 });
 
 test('변경 이력은 검사하지 않는다', () => {

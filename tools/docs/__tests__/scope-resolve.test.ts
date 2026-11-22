@@ -29,7 +29,7 @@ const broken = (title: string): string =>
     '',
     '[`없음`](./nothing.md) `PENDING::system::ghost`',
     '',
-    '## 미확정 사항',
+    '## 보류 사항',
     '',
     '- 손으로 쓴 줄',
     '',
@@ -71,10 +71,10 @@ test(
 );
 
 test(
-  'work 는 디렉터리 경계로 판정한다 - 낡은 미확정 절이 있는 docs/workshop.md 는 지적되고 gen 이 고친다',
+  'work 는 디렉터리 경계로 판정한다 - 낡은 보류 사항 절이 있는 docs/workshop.md 는 지적되고 gen 이 고친다',
   withProject((p) => {
     p.write('specthread/config.local.jsonc', '{ "work": "docs/work" }');
-    p.write('docs/workshop.md', doc('W', ['내용.'], ['미확정 사항']));
+    p.write('docs/workshop.md', doc('W', ['내용.'], ['보류 사항']));
     assert.deepEqual(p.check(), ['docs/workshop.md:14 pending/section-stale']);
     p.gen();
     assert.deepEqual(p.check(), []);
@@ -105,7 +105,7 @@ test(
       '**목차**',
       '',
       '- [1. 개요](#1-개요)',
-      '- [미확정 사항](#미확정-사항)',
+      '- [보류 사항](#보류-사항)',
       '- [참조](#참조)',
       '- [변경 이력](#변경-이력)',
       '',
@@ -113,7 +113,7 @@ test(
       '',
       '[`b.md`](./b.md) 참고.',
       '',
-      '## 미확정 사항',
+      '## 보류 사항',
       '',
       '## 참조',
       '',
@@ -129,9 +129,9 @@ test(
 );
 
 test(
-  '생성된 미확정 사항 절의 줄은 대상 문서 기준으로 검사하지 않는다',
+  '생성된 보류 사항 절의 줄은 대상 문서 기준으로 검사하지 않는다',
   withProject((p) => {
-    p.write('docs/a.md', doc('A', ['`PENDING::system::foo`'], ['미확정 사항']));
+    p.write('docs/a.md', doc('A', ['`PENDING::system::foo`'], ['보류 사항']));
     p.write(
       'specthread/pending.md',
       p

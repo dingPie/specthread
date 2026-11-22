@@ -14,7 +14,7 @@
  */
 export const TAIL = {
   REFS: '참조',
-  PENDING: '미확정 사항',
+  PENDING: '보류 사항',
   CHANGELOG: '변경 이력',
 } as const;
 

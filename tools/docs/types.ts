@@ -26,7 +26,7 @@ export interface Heading {
   raw: string;
   anchor: string;
   line: number;
-  /** 꼬리 절 (참조 / 미확정 사항 / 변경 이력) 인지 */
+  /** 꼬리 절 (참조 / 보류 사항 / 변경 이력) 인지 */
   tail: boolean;
 }
 
@@ -70,7 +70,7 @@ export interface Marker {
   line: number;
 }
 
-/** 큐 항목 또는 문서 미확정 사항 절 항목 */
+/** 큐 항목 또는 문서 보류 사항 절 항목 */
 export interface PendingItem {
   kind: string;
   slug: string;
@@ -100,7 +100,7 @@ export interface IndexedFile {
   tocBlock: Range | null;
   /** 하단 참조 절 본문 범위. 헤딩 줄은 뺀다 - 생성기가 절 제목을 지우면 안 된다 */
   refSection: Range | null;
-  /** 미확정 사항 절 본문 범위. 헤딩 줄은 뺀다. 없는 문서도 많다 - 그 절 자체가 선택이다 */
+  /** 보류 사항 절 본문 범위. 헤딩 줄은 뺀다. 없는 문서도 많다 - 그 절 자체가 선택이다 */
   pendingSection: Range | null;
   /** 변경 이력 절 본문 범위. 이 안의 참조는 과거 상태를 적은 것이라 검사에서 뺀다 */
   changeLogRange: Range | null;

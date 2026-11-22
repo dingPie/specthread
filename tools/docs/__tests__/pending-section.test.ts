@@ -21,9 +21,9 @@ const mockIndex = (pending: IndexedFile): DocIndex => ({
   config: DEFAULT_CONFIG,
 });
 
-/** 미확정 사항 절 하나짜리 대상 문서 */
+/** 보류 사항 절 하나짜리 대상 문서 */
 const targetDoc = (path: string): IndexedFile =>
-  at(path, '# 제목', '## 미확정 사항', '자리표시자', '## 변경 이력', '| 날짜 | 내용 |');
+  at(path, '# 제목', '## 보류 사항', '자리표시자', '## 변경 이력', '| 날짜 | 내용 |');
 
 test('참조가 가리키는 문서 기준으로 항목을 뒤집는다', () => {
   const pending = pendingFile(
@@ -63,7 +63,7 @@ test('가리키는 항목이 없으면 해당 없음을 낸다', () => {
   assert.equal(block.some((l) => l.startsWith('해당 없음')), true);
 });
 
-test('미확정 사항 절이 없는 문서는 빈 배열이다 - 새로 만들지 않는다', () => {
+test('보류 사항 절이 없는 문서는 빈 배열이다 - 새로 만들지 않는다', () => {
   const pending = pendingFile(
     '# pending',
     '## 2. 도메인',

@@ -11,7 +11,7 @@ export const LOCAL_CONFIG_PATH = `${SPECTHREAD_DIR}/config.local.jsonc`;
 
 /** 규칙 문서 */
 export const RULES_PATH = `${SPECTHREAD_DIR}/rules.md`;
-/** 미확정 사항 정본 */
+/** 보류 사항 정본 */
 export const PENDING_PATH = `${SPECTHREAD_DIR}/pending.md`;
 /** 프로젝트 맥락 문서 */
 export const PROJECT_PATH = `${SPECTHREAD_DIR}/project.md`;

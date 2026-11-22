@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readConfig } from "../config-loader.ts";
 import { DEFAULT_CONFIG } from "../config.schema.ts";
 import {
   CONFIG_PATH,
@@ -12,7 +13,13 @@ import {
   TEMPLATES_DIR,
 } from "../constants/paths.ts";
 import { renderConfig } from "./config-template.ts";
-import { renderUpgradePrompt, type AgentsStatus } from "./upgrade-prompt.ts";
+import {
+  renderUpgradePrompt,
+  versionSteps,
+  type AgentsStatus,
+  type UpgradeContext,
+} from "./upgrade/index.ts";
+import { isLegacyAgents } from "./upgrade/v0.2.ts";
 
 const SPECTHREAD_START = "<!-- specthread:start -->";
 const SPECTHREAD_END = "<!-- specthread:end -->";
@@ -48,31 +55,41 @@ interface ScaffoldFile {
   owner: Owner;
 }
 
-const putFile = (dest: string, content: string, force: boolean, owner: Owner): WriteStatus => {
+/** 프로젝트에 쓸 파일 하나 */
+interface WriteInput {
+  /** 대상의 절대 경로 */
+  dest: string;
+  content: string;
+  force: boolean;
+  owner: Owner;
+}
+
+const putFile = ({ dest, content, force, owner }: WriteInput): WriteStatus => {
   const existed = existsSync(dest);
   if (existed && owner === "user") return force ? "kept" : "skipped";
   if (existed && !force) return "skipped";
   if (existed && readFileSync(dest, "utf8") === content) return "unchanged";
+
   const dir = dirname(dest);
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
   writeFileSync(dest, content, "utf8");
   return existed ? "overwritten" : "created";
 };
 
-const copyFile = (src: string, dest: string, force: boolean, owner: Owner): WriteStatus =>
-  putFile(dest, readFileSync(src, "utf8"), force, owner);
+/** scaffold 원본을 읽어 쓴다. `dest` 는 절대 경로다 */
+interface CopyInput extends Omit<WriteInput, "content"> {
+  /** scaffold 안 원본의 절대 경로 */
+  src: string;
+}
+
+const copyFile = ({ src, ...rest }: CopyInput): WriteStatus =>
+  putFile({ ...rest, content: readFileSync(src, "utf8") });
 
 /** 표식으로 감싼 specthread 섹션. 표식 사이만 패키지가 갱신한다 */
-const wrapSection = (section: string): string => `${SPECTHREAD_START}\n${section}\n${SPECTHREAD_END}`;
-
-/**
- * 표식 없이 만들어진 이전 버전의 AGENTS.md 인지. scaffold 의 제목과 절 이름으로 본다.
- *
- * 섹션을 덧붙이면 같은 내용이 두 번 들어가고, 파일 전체를 바꾸면 사용자가 덧붙인 내용이
- * 사라질 수 있다. 그래서 건드리지 않고 알린다.
- */
-const isLegacyAgents = (content: string): boolean =>
-  /^# specthread\s*$/m.test(content) && /^## 2\. SDD 작업 흐름\s*$/m.test(content);
+const wrapSection = (section: string): string =>
+  `${SPECTHREAD_START}\n${section}\n${SPECTHREAD_END}`;
 
 /** AGENTS.md 의 specthread 섹션을 맞춘다 */
 const ensureAgentsMd = (cwd: string, scaffold: string): AgentsStatus => {
@@ -95,17 +112,26 @@ const ensureAgentsMd = (cwd: string, scaffold: string): AgentsStatus => {
       return "broken";
     }
     const after = content.slice(end + SPECTHREAD_END.length);
-    writeFileSync(dest, `${content.slice(0, start)}${wrapSection(section)}${after}`, "utf8");
+    writeFileSync(
+      dest,
+      `${content.slice(0, start)}${wrapSection(section)}${after}`,
+      "utf8",
+    );
     console.log("  AGENTS.md specthread 섹션 갱신");
     return "written";
   }
 
+  // 0.1 이 표식 없이 만든 파일은 건드리지 않는다. 판별 기준은 upgrade/v0.2.ts 가 갖는다
   if (isLegacyAgents(content)) {
     console.log("  AGENTS.md 이전 버전 형식 (구분 표식 없음). 건드리지 않음");
     return "legacy";
   }
 
-  writeFileSync(dest, `${content.trimEnd()}\n\n${wrapSection(section)}\n`, "utf8");
+  writeFileSync(
+    dest,
+    `${content.trimEnd()}\n\n${wrapSection(section)}\n`,
+    "utf8",
+  );
   console.log("  AGENTS.md specthread 섹션 삽입");
   return "written";
 };
@@ -145,18 +171,21 @@ const ensureGitignore = (cwd: string): void => {
     return;
   }
 
-  writeFileSync(dest, `${content.trimEnd()}\n\n# specthread 개인 설정\n${LOCAL_CONFIG_PATH}\n`, "utf8");
+  writeFileSync(
+    dest,
+    `${content.trimEnd()}\n\n# specthread 개인 설정\n${LOCAL_CONFIG_PATH}\n`,
+    "utf8",
+  );
   console.log(`  .gitignore ${LOCAL_CONFIG_PATH} 추가`);
 };
 
 const SKILLS = ["plan-open", "plan-run", "plan-close"];
 
-/** 패키지에서 제거한 스킬. 해결 방법은 check 출력에 있다 */
-const REMOVED_SKILLS = ["check", "gen"];
-
 /** 업데이트 프롬프트 구분선. 사용자가 이 사이를 복사해 AI 에 전달한다 */
-const PROMPT_START = "── 업데이트 프롬프트: 아래를 AI 에게 그대로 전달한다 ──────────────";
-const PROMPT_END = "──────────────────────────────────────────────────────────────";
+const PROMPT_START =
+  "── 업데이트 프롬프트: 아래를 AI 에게 그대로 전달한다 ──────────────";
+const PROMPT_END =
+  "──────────────────────────────────────────────────────────────";
 
 const parseTools = (args: string[]): Set<string> => {
   const idx = args.indexOf("--tools");
@@ -189,14 +218,21 @@ export const init = (args: string[]): void => {
     console.log(`  ${SPECTHREAD_DIR}/ 생성`);
   }
 
-  const configStatus = putFile(join(cwd, CONFIG_PATH), renderConfig(DEFAULT_CONFIG), force, "user");
+  const configStatus = putFile({
+    dest: join(cwd, CONFIG_PATH),
+    content: renderConfig(DEFAULT_CONFIG),
+    force,
+    owner: "user",
+  });
   console.log(`  ${CONFIG_PATH} ${STATUS_LABEL[configStatus]}`);
 
   // 내용이 바뀐 패키지 파일. 업데이트 프롬프트가 사용자 수정분 확인을 요청한다
   const overwritten: string[] = [];
   const put = ({ src, dest, owner }: ScaffoldFile) => {
-    const status = copyFile(src, join(cwd, dest), force, owner);
-    if (status === "overwritten") overwritten.push(dest);
+    const status = copyFile({ src, dest: join(cwd, dest), force, owner });
+    if (status === "overwritten") {
+      overwritten.push(dest);
+    }
     console.log(`  ${dest} ${STATUS_LABEL[status]}`);
   };
 
@@ -206,60 +242,62 @@ export const init = (args: string[]): void => {
     [PROJECT_PATH, "user"],
     [PENDING_PATH, "user"],
   ];
-  for (const [dest, owner] of docs) put({ src: join(scaffold, basename(dest)), dest, owner });
+  for (const [dest, owner] of docs)
+    put({ src: join(scaffold, basename(dest)), dest, owner });
 
   for (const file of ["spec.md", "plan.md"]) {
-    put({ src: join(scaffold, "templates", file), dest: `${TEMPLATES_DIR}/${file}`, owner: "package" });
+    put({
+      src: join(scaffold, "templates", file),
+      dest: `${TEMPLATES_DIR}/${file}`,
+      owner: "package",
+    });
   }
 
   const agents = ensureAgentsMd(cwd, scaffold);
   ensureGitignore(cwd);
 
-  const oldSkills: string[] = [];
-  const removedSkills: string[] = [];
   if (tools.has("claude")) {
     ensureClaudeMd(cwd);
 
-    // Claude Code 는 `<이름>/SKILL.md` 만 스킬로 읽는다. `<이름>.md` 는 이전 버전의 경로다
     for (const name of SKILLS) {
       put({
         src: join(scaffold, "claude", "skills", name, "SKILL.md"),
         dest: `.claude/skills/${name}/SKILL.md`,
         owner: "package",
       });
-      if (existsSync(join(cwd, ".claude", "skills", `${name}.md`))) oldSkills.push(`.claude/skills/${name}.md`);
-    }
-
-    for (const name of REMOVED_SKILLS) {
-      for (const path of [`.claude/skills/${name}/SKILL.md`, `.claude/skills/${name}.md`]) {
-        if (existsSync(join(cwd, path))) removedSkills.push(path);
-      }
-    }
-
-    // 사용자가 고쳤을 수 있으므로 지우지 않고 알리기만 한다
-    if (oldSkills.length > 0) {
-      console.log("\n  이전 형식의 스킬 파일이 남아 있다. Claude Code 가 읽지 않으므로 지워도 된다:");
-      for (const path of oldSkills) console.log(`    ${path}`);
-    }
-    if (removedSkills.length > 0) {
-      console.log("\n  패키지에서 제거된 스킬 파일이 남아 있다. check 가 해결 방법을 출력하므로 지워도 된다:");
-      for (const path of removedSkills) console.log(`    ${path}`);
     }
   }
 
+  const { config, unknown } = readConfig(cwd);
+  const ctx: UpgradeContext = {
+    root: cwd,
+    config,
+    unknownKeys: unknown,
+    agents,
+    overwritten,
+    skills: tools.has("claude") ? SKILLS : [],
+  };
+
   if (force) {
-    console.log(`\n--force 는 패키지 파일만 갱신한다. ${CONFIG_PATH}, ${PROJECT_PATH}, ${PENDING_PATH} 는 그대로 둔다.`);
+    console.log(
+      `\n--force 는 패키지 파일만 갱신한다. ${CONFIG_PATH}, ${PROJECT_PATH}, ${PENDING_PATH} 는 그대로 둔다.`,
+    );
     console.log(`\n${PROMPT_START}`);
-    console.log(renderUpgradePrompt({ root: cwd, agents, overwritten, oldSkills, removedSkills }));
+    console.log(renderUpgradePrompt(ctx));
     console.log(PROMPT_END);
     return;
   }
 
   if (agents === "broken") {
-    console.log(`\nAGENTS.md 의 specthread 섹션 끝에 ${SPECTHREAD_END} 를 넣고 다시 실행한다.`);
+    console.log(
+      `\nAGENTS.md 의 specthread 섹션 끝에 ${SPECTHREAD_END} 를 넣고 다시 실행한다.`,
+    );
   }
-  if (agents === "legacy" || oldSkills.length > 0 || removedSkills.length > 0) {
-    console.log("\n이전 버전에서 올린 프로젝트로 보인다. `npx specthread init --force` 로 패키지 파일을 갱신하면 남은 정리를 위한 프롬프트를 출력한다.");
+  // 이전 버전의 흔적은 지우지 않는다. 사용자가 고쳤을 수 있어서 프롬프트로 확인을 맡긴다
+  if (versionSteps(ctx).length > 0) {
+    console.log(
+      "\n이전 버전에서 올린 프로젝트로 보인다. `npx specthread init --force` 로 패키지 파일을 갱신하면 남은 정리를 위한 프롬프트를 출력한다.",
+    );
   }
 
   console.log("\n완료. npx specthread check 로 문서 정합성을 확인할 수 있다.");

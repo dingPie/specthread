@@ -4,7 +4,7 @@
  * 변경 이력 절은 과거 상태를 적은 곳이다. 지워진 문서를 가리키는 것이 정상이므로
  * 링크·절 참조 검사에서 뺀다. 지키게 하면 이력을 고쳐 써야 하는데, 그건
  * `specthread/rules.md` §2-4 가 이력에 사건 기록을 남기라고 한 것과 어긋난다.
- * 참조 절과 미확정 사항 절은 현재 상태라 검사한다.
+ * 참조 절과 보류 사항 절은 현재 상태라 검사한다.
  */
 import type { SpecthreadConfig } from "../config.schema.ts";
 import { TAIL_NAMES } from "../constants/docs.ts";
@@ -39,7 +39,7 @@ export const inRefSection = (file: IndexedFile, line: number): boolean =>
   inRange(file.refSection, line);
 
 /**
- * 미확정 사항 절 안의 줄인지.
+ * 보류 사항 절 안의 줄인지.
  *
  * 관리 문서 항목의 제목을 옮겨 온 생성 뷰다. 제목 안의 링크·절 참조·날짜는 관리 문서 기준으로
  * 적힌 것이라, 이 문서 기준으로 검사하면 이 문서에서는 고칠 수 없는 지적이 된다. 원문은
@@ -60,7 +60,7 @@ export const isHeadingLine = (file: IndexedFile, line: number): boolean =>
 /** 마크다운 문서인지. 헤딩·목차·꼬리 절을 갖는 것은 문서뿐이다 */
 export const isDoc = (file: IndexedFile): boolean => file.kind === "doc";
 
-/** 작업 문서인지. 흡수 후 사라지므로 미확정 사항 절을 만들지 않는다 */
+/** 작업 문서인지. 흡수 후 사라지므로 보류 사항 절을 만들지 않는다 */
 export const isWorkDoc = (path: string, config: SpecthreadConfig): boolean =>
   underPath(path, config.work);
 
@@ -79,7 +79,7 @@ export const singleTitle = (file: IndexedFile): Heading | null => {
 };
 
 /**
- * 꼬리 절이 참조 → 미확정 사항 → 변경 이력 순서인지. 없는 절은 건너뛴다.
+ * 꼬리 절이 참조 → 보류 사항 → 변경 이력 순서인지. 없는 절은 건너뛴다.
  *
  * 생성기는 원본 줄 번호로 범위를 교체하며 이 순서를 전제한다.
  */

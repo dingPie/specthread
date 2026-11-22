@@ -90,8 +90,8 @@ test('skipRefs 에 해당하지 않는 문서는 참조 절 대상이다', () =>
 // ── 꼬리 절 순서 ──
 
 test('꼬리 절 순서를 판정한다. 없는 절은 건너뛴다', () => {
-  assert.equal(tailOrderOk(parseHeadings(['# a', '## 참조', '## 미확정 사항', '## 변경 이력'])), true);
+  assert.equal(tailOrderOk(parseHeadings(['# a', '## 참조', '## 보류 사항', '## 변경 이력'])), true);
   assert.equal(tailOrderOk(parseHeadings(['# a', '## 참조', '## 변경 이력'])), true);
-  assert.equal(tailOrderOk(parseHeadings(['# a', '## 미확정 사항', '## 참조'])), false);
-  assert.equal(tailOrderOk(parseHeadings(['# a', '## 변경 이력', '## 미확정 사항'])), false);
+  assert.equal(tailOrderOk(parseHeadings(['# a', '## 보류 사항', '## 참조'])), false);
+  assert.equal(tailOrderOk(parseHeadings(['# a', '## 변경 이력', '## 보류 사항'])), false);
 });

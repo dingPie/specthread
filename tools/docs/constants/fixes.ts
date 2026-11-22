@@ -29,7 +29,6 @@ export const FIX: Record<RuleId, string> = {
 
   [RULE.PENDING.INLINE_BODY]: '항목 헤딩 줄에는 id 와 제목만 두고 본문은 다음 문단으로 옮긴다',
   [RULE.PENDING.INLINE_OPTIONS]: '선택지를 `- (a) ...` 목록으로 나눈다',
-  [RULE.PENDING.WORK_LINK]: '작업 문서의 근거를 항목 본문으로 옮기고 링크를 지운다',
   [RULE.PENDING.TIMEPOINT]: '헤딩 다음 줄을 `작성일 <날짜>` 또는 `작성일 <날짜> / 해결 예정 <라벨>` 로 고친다',
   [RULE.PENDING.UNKNOWN_TIMEPOINT]: '라벨을 고치거나 `config.markers.timepoints` 에 추가한다',
   [RULE.PENDING.ITEM_SHAPE]: '항목을 `###` 헤딩으로 바꾼다',

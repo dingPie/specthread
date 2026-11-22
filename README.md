@@ -4,7 +4,7 @@
 
 스펙 문서에 현재 상태만 남기고, 그 규칙을 코드로 검사하는 Spec-Driven Development(SDD) 도구입니다.
 
-- **현재 상태만 담는 스펙**: 정하지 못한 것은 `pending.md` 로, 지난 이력은 변경 이력과 git 으로 분리. 이 원칙을 14개 규칙으로 검사
+- **현재 상태만 담는 스펙**: 이번 작업에서 하지 않는 것은 `pending.md` 로, 지난 이력은 변경 이력과 git 으로 분리. 이 원칙을 14개 규칙으로 검사
 - **코드로 하는 검사**: 목차·참조 절은 자동 생성하고, 링크·절 참조를 포함한 30개 규칙을 검사. CI 에서 종료 코드로 판정
 - **기본 작업 흐름**: spec·plan 템플릿과 AI 에이전트용 `AGENTS.md`·스킬로 계획 → 구현 → spec 반영
 
@@ -40,7 +40,7 @@ specthread/
   config.jsonc     설정
   rules.md         문서 형식 규칙
   project.md       설정값의 맥락과 근거
-  pending.md       미확정 사항 정본
+  pending.md       보류 사항 정본
   templates/       spec·plan 문서 골격
 AGENTS.md          AI 도구 진입점
 CLAUDE.md          @AGENTS.md
@@ -71,7 +71,7 @@ npx specthread gen --write   # 생성 결과 적용
 ```
 
 - `check`: 지적이 있으면 종료 코드 1, 설정을 읽지 못하면 2
-- `gen`: 목차, 참조 절, 미확정 사항 목록 생성. `--write` 없이는 바뀔 파일 목록만 출력
+- `gen`: 목차, 참조 절, 보류 사항 목록 생성. `--write` 없이는 바뀔 파일 목록만 출력
 - `init --force`: `config.jsonc`, `project.md`, `pending.md` 는 덮어쓰지 않음
 
 규칙 전체와 규칙 ID 는 [`rules.md`](https://github.com/dingPie/specthread/blob/main/scaffold/rules.md) 에 있습니다. `init` 이 같은 파일을 `specthread/rules.md` 로 설치합니다.
@@ -80,7 +80,7 @@ npx specthread gen --write   # 생성 결과 적용
 
 ## 작업 흐름
 
-구현 전에 spec 을 읽습니다. 코드 변경이 시스템 동작을 바꾸면 spec 을 갱신하는데, 계획 문서가 있는 작업은 `/plan-close` 에서, 없으면 같은 커밋에서 갱신합니다. 코드와 spec 이 다르면 AI 가 임의로 한쪽에 맞추지 않고 사용자에게 확인합니다. 진행 중 정하지 못한 것은 `PENDING::<종류>::<slug>` 마커로 남기고 작업을 계속합니다.
+구현 전에 spec 을 읽습니다. 코드 변경이 시스템 동작을 바꾸면 spec 을 갱신하는데, 계획 문서가 있는 작업은 `/plan-close` 에서, 없으면 같은 커밋에서 갱신합니다. 코드와 spec 이 다르면 AI 가 임의로 한쪽에 맞추지 않고 사용자에게 확인합니다. 확인이 필요한 것은 사용자에게 묻고, 이번 작업에서 하지 않기로 한 것만 `PENDING::<종류>::<slug>` 마커로 남깁니다.
 
 ```
 You: 소셜 로그인 계획 세워줘
@@ -88,8 +88,11 @@ AI:  docs/spec/auth.md 확인 후
      docs/work/social-login.md 작성
 
 You: 진행해줘
-AI:  OAuth 연동 구현, 세션 방식은 미정이라
-     PENDING::design::oauth-session 마커 추가
+AI:  세션 방식이 문서와 코드에서 달라 확인이 필요합니다 (추천: 토큰)
+
+You: 이번엔 세션 유지, 토큰 전환은 다음 작업에서
+AI:  OAuth 연동 구현, 토큰 전환은
+     PENDING::design::oauth-session 으로 보류 등록
 
 You: 정리해줘
 AI:  작업 내용을 docs/spec/auth.md 에 반영,

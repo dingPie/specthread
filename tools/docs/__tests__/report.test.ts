@@ -63,6 +63,6 @@ test(
     );
     const r = p.gen();
     assert.match(r.stdout, /건너뜀 - 1 건/);
-    assert.match(r.stdout, /→ 꼬리 절을 참조 → 미확정 사항 → 변경 이력 순서로 옮긴 뒤 npx specthread gen --write/);
+    assert.match(r.stdout, /→ 꼬리 절을 참조 → 보류 사항 → 변경 이력 순서로 옮긴 뒤 npx specthread gen --write/);
   }),
 );
