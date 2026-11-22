@@ -80,7 +80,7 @@ npx specthread gen --write   # 생성 결과 적용
 
 ## 작업 흐름
 
-구현 전에 spec 을 읽습니다. 코드 변경이 시스템 동작을 바꾸면 spec 을 갱신하는데, 계획 문서가 있는 작업은 `/plan-close` 에서, 없으면 같은 커밋에서 갱신합니다. 코드와 spec 이 다르면 AI 가 임의로 한쪽에 맞추지 않고 사용자에게 확인합니다. 진행 중 정하지 못한 것은 `PENDING::<종류>::<slug>` 마커로 남기고 작업을 계속합니다.
+구현 전에 spec 을 읽습니다. 코드 변경이 시스템 동작을 바꾸면 spec 을 갱신하는데, 계획 문서가 있는 작업은 `/plan-close` 에서, 없으면 같은 커밋에서 갱신합니다. 코드와 spec 이 다르면 AI 가 임의로 한쪽에 맞추지 않고 사용자에게 확인합니다. 확인이 필요한 것은 사용자에게 묻고, 이번 작업에서 하지 않기로 한 것만 `PENDING::<종류>::<slug>` 마커로 남깁니다.
 
 ```
 You: 소셜 로그인 계획 세워줘
@@ -88,8 +88,11 @@ AI:  docs/spec/auth.md 확인 후
      docs/work/social-login.md 작성
 
 You: 진행해줘
-AI:  OAuth 연동 구현, 세션 방식은 미정이라
-     PENDING::design::oauth-session 마커 추가
+AI:  세션 방식이 문서와 코드에서 달라 확인이 필요합니다 (추천: 토큰)
+
+You: 이번엔 세션 유지, 토큰 전환은 다음 작업에서
+AI:  OAuth 연동 구현, 토큰 전환은
+     PENDING::design::oauth-session 으로 보류 등록
 
 You: 정리해줘
 AI:  작업 내용을 docs/spec/auth.md 에 반영,

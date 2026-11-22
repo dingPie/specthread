@@ -24,7 +24,7 @@ Spec-Driven Development (SDD) 템플릿. 문서가 단일 진실 원천이고 �
 ```
 
 - 구현 전에 spec 을 읽는다. spec 반영 시점은 개요의 "spec 갱신 시점"을 따른다.
-- 진행 중 모호함을 발견하면 `PENDING` 마커를 남기고 작업을 계속한다 (§4).
+- 확인이 필요한 것은 사용자에게 묻고, plan 이 있으면 확인 필요 절에 적는다. 이번 작업에서 하지 않기로 한 것만 `PENDING` 마커로 보류한다 (§4).
 
 ## 3. 문서 체계
 
@@ -40,7 +40,7 @@ Spec-Driven Development (SDD) 템플릿. 문서가 단일 진실 원천이고 �
 
 ## 4. 보류 마커
 
-미완·임시 코드·데이터·디자인은 `PENDING::<종류>::<slug>` 마커로 명시한다. slug 가 `specthread/pending.md` 항목 하나를 가리킨다.
+다른 작업에서 바꿀 임시 코드·데이터·디자인은 `PENDING::<종류>::<slug>` 마커로 명시한다. slug 가 `specthread/pending.md` 항목 하나를 가리킨다.
 
 위치별 표기:
 
