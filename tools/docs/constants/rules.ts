@@ -46,8 +46,6 @@ export const RULE = {
     INLINE_BODY: 'pending/inline-body',
     /** 선택지를 한 줄 안에 늘어놓았다 */
     INLINE_OPTIONS: 'pending/inline-options',
-    /** 흡수 후 사라지는 작업 문서를 가리킨다 */
-    WORK_LINK: 'pending/work-link',
     /** 시점 표기가 형식에 안 맞는다 */
     TIMEPOINT: 'pending/timepoint',
     /** 해결 예정 라벨이 `markers.timepoints` 에 없다 */

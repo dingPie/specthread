@@ -272,7 +272,7 @@ ASCII 박스 드로잉은 쓰지 않는다. 폭을 손으로 맞춰야 하고, �
 
 마커는 산문 안에 박히므로 자기를 식별할 `PENDING` 접두가 필요하다. 관리 문서와 보류 사항 절은 위치 자체가 맥락이므로 접두 없이 id 만 쓴다. `grep -c "PENDING::design"` 이 실제 발생 지점만 세는 것도 이 구분 덕분이다.
 
-보류 사항 절은 관리 문서 항목의 `참조:` 줄을 뒤집어 자동 생성한다 (검사: `pending/section-stale`). 절이 이미 있는 문서만 채운다. 작업 문서는 대상이 아니다. 흡수 후 사라져 관리 문서가 가리킬 수 없으므로 생성할 내용이 없다.
+보류 사항 절은 관리 문서 항목의 `참조:` 줄을 뒤집어 자동 생성한다 (검사: `pending/section-stale`). 절이 이미 있는 문서만 채운다. 작업 문서는 대상이 아니다. 흡수 후 사라지는 문서라 보류 사항 뷰를 두지 않는다.
 
 ### 4-1. 마커
 
@@ -323,7 +323,6 @@ JSON    "_pending": "style::api-version"
 - `pending/item-shape`
 - `pending/inline-body`
 - `pending/inline-options`
-- `pending/work-link`
 - `pending/timepoint`
 - `pending/unknown-timepoint`
 - `pending/summary-missing`
@@ -382,7 +381,7 @@ JSON    "_pending": "style::api-version"
 
 - 코드나 문서 위치(마커, `참조:` 줄)와 연결된 항목만 담는다. 위치와 관계없는 아이디어는 이슈 트래커에 둔다
 - 슬러그만 두지 않는다. 무엇이 남았는지 알 수 있어야 한다
-- `docs/work/` 문서를 가리키지 않는다. 작업 문서는 흡수 후 사라지므로 근거를 항목 안으로 옮긴다
+- 항목 본문이 정본이다. 상세 설계가 이미 있으면 작업 문서(`docs/work/`)나 조사 문서를 링크할 수 있다. 작업 문서가 흡수되어 삭제되면 링크가 깨지므로(`link/target`) plan-close 에서 그 항목을 갱신한다
 - 해결되면 항목을 지운다. 단순 해소는 변경 이력에도 적지 않는다 (`git log -p` 가 기록을 갖는다). slug 가 다른 항목으로 흡수된 경우만 이력에 메모한다
 
 **자동 생성**

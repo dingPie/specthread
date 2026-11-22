@@ -5,7 +5,6 @@
  * 이유라서, 다른 문서에 같은 모양이 나타나면 그건 보류 사항 절 (생성 뷰) 이고
  * 형식이 다르다 - 뷰는 `li`, 정본은 `###` 헤딩이다.
  */
-import { dirname, join, normalize } from 'node:path';
 import type { SpecthreadConfig } from '../config.schema.ts';
 import { PENDING_PATH } from '../constants/paths.ts';
 import { ITEM_AS_LI, ITEM_HEADING, timepointGlobal } from '../constants/patterns.ts';
@@ -13,7 +12,6 @@ import { RULE } from '../constants/rules.ts';
 import { summaryBlocks } from '../gen/summary.ts';
 import { invertByTarget, pendingSectionBlock } from '../gen/pending-section.ts';
 import { eachContentLine } from '../utils/parse.ts';
-import { underPath } from '../utils/path-match.ts';
 import { inChangeLog, isWorkDoc } from '../utils/scope.ts';
 import type { DocIndex, Finding, IndexedFile } from '../types.ts';
 
@@ -64,27 +62,14 @@ const inspectHeading = (path: string, line: number, title: string): Finding[] =>
   return findings;
 };
 
-/** 링크 대상과 코드 스팬. 둘 다 경로가 올 수 있다 */
-const LINK_TARGET = /\]\(([^)]+)\)/g;
-const CODE_SPAN = /`([^`]+)`/g;
+/** 항목 본문 한 줄 */
+interface BodyLine {
+  path: string;
+  line: number;
+  text: string;
+}
 
-/**
- * 경로가 작업 폴더를 가리키는지.
- *
- * 링크는 문서 기준 상대 경로, 코드 스팬은 루트 기준 표기가 흔하다. 둘 다 본다.
- */
-const pointsToWork = (raw: string, dir: string, work: string): boolean => {
-  const clean = raw.split('#')[0].trim();
-  if (clean === '') return false;
-  return underPath(normalize(clean), work) || underPath(normalize(join(dir, clean)), work);
-};
-
-const inspectBody = (
-  path: string,
-  line: number,
-  text: string,
-  work: string,
-): Finding[] => {
+const inspectBody = ({ path, line, text }: BodyLine): Finding[] => {
   const findings: Finding[] = [];
 
   if (ITEM_AS_LI.test(text)) {
@@ -102,20 +87,6 @@ const inspectBody = (
       line,
       rule: RULE.PENDING.INLINE_OPTIONS,
       message: '선택지는 `li` 로 낸다',
-    });
-  }
-
-  const dir = dirname(path);
-  const refs = [
-    ...[...text.matchAll(LINK_TARGET)].map((m) => m[1]),
-    ...[...text.matchAll(CODE_SPAN)].map((m) => m[1]),
-  ];
-  if (refs.some((r) => pointsToWork(r, dir, work))) {
-    findings.push({
-      file: path,
-      line,
-      rule: RULE.PENDING.WORK_LINK,
-      message: '작업 문서는 흡수 후 사라진다. 근거를 항목 안으로 옮겨 적는다',
     });
   }
 
@@ -263,7 +234,7 @@ export const checkPending = (index: DocIndex): Finding[] => {
       findings.push(...inspectTimepoint(file, line, index.config));
       return;
     }
-    findings.push(...inspectBody(file.path, line, raw, index.config.work));
+    findings.push(...inspectBody({ path: file.path, line, text: raw }));
   });
 
   return [...findings, ...inspectSummary(file, index), ...inspectPendingSection(index)];
