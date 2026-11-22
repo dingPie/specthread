@@ -116,5 +116,10 @@ export const v0_3: VersionUpgrade = {
       before: "| 각 문서 `## 미확정 사항` |",
       after: "| 각 문서 `## 보류 사항` |",
     },
+    {
+      file: PENDING_PATH,
+      before: "| 해당 문서에 걸린 항목 목록 | 도구 생성 |",
+      after: "| `참조:` 줄이 그 문서를 가리키는 항목 목록 | 도구 생성 |",
+    },
   ],
 };
