@@ -102,13 +102,13 @@ test('JSONC 문법 오류는 파일명을 담는다', () => {
   assert.deepEqual(problemsOf(() => load('{ "work": }')), ['specthread/config.jsonc ']);
 });
 
-test('제거한 키는 경고만 하고 동작한다', () => {
+test('제거한 키도 알 수 없는 키로 경고만 하고 동작한다', () => {
   let config = DEFAULT_CONFIG;
   const warnings = captureWarn(() => {
     config = load('{ "locale": "ko", "pending": "docs/pending.md", "features": { "emDash": true } }');
   });
   assert.equal(warnings.length, 3);
-  assert.ok(warnings.every((w) => w.includes('제거된 키')));
+  assert.ok(warnings.every((w) => w.includes('알 수 없는 키')));
   assert.deepEqual(config, DEFAULT_CONFIG);
 });
 
